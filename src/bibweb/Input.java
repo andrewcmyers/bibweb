@@ -1,6 +1,5 @@
 package bibweb;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public interface Input {

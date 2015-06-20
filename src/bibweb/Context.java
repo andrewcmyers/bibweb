@@ -13,7 +13,8 @@ public class Context {
 		
 		Node(Node above) { up = above; }
 	}
-	static public class LookupFailure extends Exception {}
+	static public class LookupFailure extends Exception {
+		private static final long serialVersionUID = 1L;}
 	static LookupFailure lookupFailed = new LookupFailure();
 	
 
