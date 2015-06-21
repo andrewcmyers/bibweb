@@ -46,7 +46,7 @@ public class Main {
 	}
 
 	public static void usage() {
-		System.err.println("Usage: bibhtml [--help | --defns | <script-file> ]");
+		System.err.println("Usage: bibweb [--help | --defns | <script-file> ]");
 	}
 
 	public static void main(String[] args) {
