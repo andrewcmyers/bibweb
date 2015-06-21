@@ -21,6 +21,7 @@ import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
 public class Main {
+	String[] args;
 	String inputFile;
 	BibTeXDatabase db;
 	HashMap<String, Publication> pubs;
@@ -39,24 +40,50 @@ public class Main {
 		}
 	}
 
-	Main(String inputFile) {
-		this.inputFile = inputFile;
+	Main(String[] args) {
+		this.args = args;
 	}
 
 	public static void usage() {
-		System.err.println("Usage: bibhtml <input-file.bib>");
+		System.err.println("Usage: bibhtml [--help | <input-file.bib> ]");
 	}
 
 	public static void main(String[] args) {
+		Main me = new Main(args);
+		me.run();
+	}
+	public void parseArgs() {
 		if (args.length != 1) {
 			usage();
 			System.exit(1);
 		}
-		Main me = new Main(args[0]);
-		me.run();
+
+		if (args[0].equals("--help")) {
+			help();
+			System.exit(0);
+		} else {
+			inputFile = args[0];
+		}
+	}
+	public void help() {
+		usage();
+		System.out.println("Default definitions:");
+		for (int i = 0; i < BuiltinMacros.macros.length; i++) {
+			System.out.print(BuiltinMacros.macros[i][0]);
+			System.out.print(": ");
+			String value = BuiltinMacros.macros[i][1];
+			if (value.contains("\n")) {
+				System.out.println("\n" + value);
+				System.out.println(".");
+			} else {
+				System.out.println(value);
+			}
+		}
 	}
 
 	void run() {
+		parseArgs();
+
 		try {
 			Scanner sc = new Scanner(new FileReader(inputFile));
 			try {
@@ -95,7 +122,8 @@ public class Main {
 			}
 		}
 		if (!generated) {
-			System.out.println("No 'generate' command found, nothing generated.");
+			System.out
+					.println("No 'generate' command found, nothing generated.");
 		}
 	} // runScript
 
@@ -126,7 +154,6 @@ public class Main {
 	void runScriptLine(String attribute, String value)
 			throws TokenMgrException, ParseException,
 			ObjectResolutionException, IOException {
-
 
 		switch (attribute) {
 		case "bibfile":
@@ -169,6 +196,7 @@ public class Main {
 	private void generateHeader(PrintWriter w) {
 		w.print(expand("\\header"));
 	}
+
 	private void generateFooter(PrintWriter w) {
 		w.print(expand("\\footer"));
 	}
@@ -182,7 +210,8 @@ public class Main {
 	}
 
 	String expand(String s) {
-		if (s == null) return "";
+		if (s == null)
+			return "";
 		return expand(s, false);
 	}
 
@@ -248,8 +277,11 @@ public class Main {
 				public boolean select(Publication p) {
 					for (String a : p.authors()) {
 						try {
-							if (a.equals(t2h.lookup("author"))) return true;
-						} catch (Context.LookupFailure e) { return false; }
+							if (a.equals(t2h.lookup("author")))
+								return true;
+						} catch (Context.LookupFailure e) {
+							return false;
+						}
 					}
 					return false;
 				}
@@ -303,23 +335,26 @@ public class Main {
 			if (w != null) {
 				generateFooter(w);
 			} else {
-				System.out.println("No output file specified in 'generate', no output generated.");
+				System.out
+						.println("No output file specified in 'generate', no output generated.");
 			}
 
 		} finally {
 			if (sections == false) {
-				System.out.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
+				System.out
+						.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
 			}
 			sc.close();
 			t2h.pop();
-			if (w != null) w.close();
+			if (w != null)
+				w.close();
 		}
 
 	}
 
 	private void generateSection(PrintWriter w, Scanner ssc) {
 		Set<Publication> selected = new HashSet<>();
-//		System.out.println("Starting new section");
+		// System.out.println("Starting new section");
 		t2h.push();
 		try {
 			while (ssc.hasNextLine()) {
@@ -348,8 +383,8 @@ public class Main {
 				}
 			}
 			Publication[] pa = selected.toArray(new Publication[0]);
-//			System.out.println("Selected " + pa.length
-//					+ " publications for this section.");
+			// System.out.println("Selected " + pa.length
+			// + " publications for this section.");
 			Arrays.sort(pa, byYear);
 
 			w.println(expand("\\intro"));
@@ -379,30 +414,8 @@ public class Main {
 		}
 	};
 
-//	private void generateByType(String fname, String uri)
-//			throws FileNotFoundException {
-//		PrintWriter w = new PrintWriter(fname);
-//		System.out.println("Generating " + fname + "...");
-//		generateHeader(w);
-//		ArrayList<Publication> ord = new ArrayList<>();
-//		for (String e : pubs.keySet()) {
-//			ord.add(pubs.get(e));
-//		}
-//
-//		w.println("<ul class=pubs>");
-//		Publication[] pa = ord.toArray(new Publication[0]);
-//		Arrays.sort(pa, byYear);
-//		Arrays.sort(pa, byType);
-//		for (Publication p : pa) {
-//			w.println("<li>");
-//			generatePub(p, w);
-//			w.println("</li>");
-//		}
-//		w.println("</ul>");
-//		w.close();
-//	}
-	
 	static String crlf = "\r\n";
+
 	String generateTitle(Publication p) {
 		String url = p.url();
 		StringBuilder b = new StringBuilder();
@@ -419,7 +432,7 @@ public class Main {
 		b.append("</span>");
 		return b.toString();
 	}
-	
+
 	String wherePublished(Publication p) {
 		StringBuilder b = new StringBuilder();
 		switch (p.pubType()) {
@@ -439,55 +452,55 @@ public class Main {
 
 			String pp = p.pages();
 			if (pp != null)
-					b.append(",\r\npp. " + pp);
-				break;
-			case "article":
-				b.append("<span class=journalname>");
-				if (p.venueURL() != null) {
-					b.append("<a href=\"");
-					b.append(p.venueURL());
-					b.append("\">");
-				}
-				b.append(expand(p.venue()));
-				if (p.venueURL() != null)
-					b.append("</a>");
-				b.append("</span>");
-				String volume = p.volume();
-				String number = p.number();
-				String pages = p.pages();
-				if (volume != null) {
-					b.append(", ");
-					b.append(volume);
-					if (number != null) {
-						b.append("(");
-						b.append(number);
-						b.append(")");
-					}
-					if (pages != null) {
-						b.append(":");
-						b.append(pages);
-					}
-				}
-				break;
-			case "unpublished":
-				b.append(expand(p.field("note", BibTeXEntry.KEY_NOTE)));
-				break;
-			case "software":
-				b.append("Software release");
-				break;
-			default:
-				b.append("<strong>(Unhandled publication type " + p.pubType()
-						+ ")</strong>");
+				b.append(",\r\npp. " + pp);
+			break;
+		case "article":
+			b.append("<span class=journalname>");
+			if (p.venueURL() != null) {
+				b.append("<a href=\"");
+				b.append(p.venueURL());
+				b.append("\">");
 			}
-			b.append(",\r\n");
-			if (p.month() == 0) {
-				b.append(p.year());
-			} else {
-				b.append(month_names[p.month() - 1]);
-				b.append(" ");
-				b.append(p.year());
+			b.append(expand(p.venue()));
+			if (p.venueURL() != null)
+				b.append("</a>");
+			b.append("</span>");
+			String volume = p.volume();
+			String number = p.number();
+			String pages = p.pages();
+			if (volume != null) {
+				b.append(", ");
+				b.append(volume);
+				if (number != null) {
+					b.append("(");
+					b.append(number);
+					b.append(")");
+				}
+				if (pages != null) {
+					b.append(":");
+					b.append(pages);
+				}
 			}
-			return b.toString();
+			break;
+		case "unpublished":
+			b.append(expand(p.field("note", BibTeXEntry.KEY_NOTE)));
+			break;
+		case "software":
+			b.append("Software release");
+			break;
+		default:
+			b.append("<strong>(Unhandled publication type " + p.pubType()
+					+ ")</strong>");
+		}
+		b.append(",\r\n");
+		if (p.month() == 0) {
+			b.append(p.year());
+		} else {
+			b.append(month_names[p.month() - 1]);
+			b.append(" ");
+			b.append(p.year());
+		}
+		return b.toString();
 	}
 
 	void generatePub(Publication p, PrintWriter w) {
@@ -495,11 +508,13 @@ public class Main {
 		String title = generateTitle(p);
 		String where_published = wherePublished(p);
 		String authors = formattedAuthors(p);
-		t2h.addMacro("pubtitle",  title);
+		t2h.addMacro("pubtitle", title);
 		t2h.addMacro("wherepublished", where_published);
 		t2h.addMacro("authors", authors);
 		try {
 			w.println(expand("\\pubformat"));
-		} finally { t2h.pop(); }
+		} finally {
+			t2h.pop();
+		}
 	}
 }
