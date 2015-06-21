@@ -45,7 +45,7 @@ public class Main {
 	}
 
 	public static void usage() {
-		System.err.println("Usage: bibhtml [--help | <input-file.bib> ]");
+		System.err.println("Usage: bibhtml [--help | --defns | <script-file> ]");
 	}
 
 	public static void main(String[] args) {
@@ -61,13 +61,32 @@ public class Main {
 		if (args[0].equals("--help")) {
 			help();
 			System.exit(0);
+		} else if (args[0].equals("--defns")) {
+			dumpDefns();
+			System.exit(0);
 		} else {
 			inputFile = args[0];
 		}
 	}
 	public void help() {
 		usage();
-		System.out.println("Default definitions:");
+		System.out.println("\nScript commands:\r\n");
+		System.out.println("  bibfile: <bibfile.bib>    % read a bibliography file");
+		System.out.println("  pubs: <pubinfo>           % specify pubs to use (by key)");
+		System.out.println("  .topic: <topics>          % specify publication topics");
+		System.out.println("  generate: <subcommands>   % generate an HTML output file");
+		System.out.println("  .output: <output.html>    % specify HTML output destination");
+		System.out.println("  .section: <subcommands>   % create a list of publications");
+		System.out.println("  ..select: <selectors>     % choose publications for current section");
+		System.out.println("  ...pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'");
+		System.out.println("  ...topic: <type>          % choose pubs by topic");
+		
+		System.out.println("\r\nMultiline commands and definitions are ended with a single .\n");
+		
+
+	}
+	void dumpDefns() {
+		System.out.println("Default definitions:\r\n");
 		for (int i = 0; i < BuiltinMacros.macros.length; i++) {
 			System.out.print(BuiltinMacros.macros[i][0]);
 			System.out.print(": ");
@@ -165,8 +184,7 @@ public class Main {
 			break;
 		case "pubs":
 			if (db == null) {
-				System.err
-						.println("Must read the bib file before reading the 'pubs' list at line "
+				System.out.println("Warning: should read the bib file before reading the 'pubs' list at line "
 								+ lineno);
 				return;
 			}
@@ -181,11 +199,11 @@ public class Main {
 			break;
 		case "generate":
 			generated = true;
-			Scanner sc = new Scanner(value);
+			Scanner gsc = new Scanner(value);
 			try {
-				generate(sc);
+				generate(gsc);
 			} finally {
-				sc.close();
+				gsc.close();
 			}
 			break;
 		default:
@@ -292,15 +310,15 @@ public class Main {
 		return new AllFilter();
 	}
 
-	private void generate(Scanner sc) {
+	private void generate(Scanner gsc) {
 		t2h.push();
 
 		String fname = null;
 		PrintWriter w = null;
 		boolean sections = false;
 		try {
-			while (sc.hasNextLine()) {
-				Parsing.AttrValue av = Parsing.parseAttribute(sc);
+			while (gsc.hasNextLine()) {
+				Parsing.AttrValue av = Parsing.parseAttribute(gsc);
 				switch (av.attribute) {
 				case "output":
 					fname = av.value;
@@ -344,7 +362,7 @@ public class Main {
 				System.out
 						.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
 			}
-			sc.close();
+			gsc.close();
 			t2h.pop();
 			if (w != null)
 				w.close();
