@@ -37,6 +37,7 @@ public class BuiltinMacros {
 		{ "style",       "  <link href=\"\\stylesheet\" type=\"text/css\" rel=\"stylesheet\" />" },
 		{ "morestyle",   "" },
 		{ "uri",         "" },
+		{ "urimeta",     "" },
 		{ "opening",     "<div class=paperlist>" },
 		{ "closing",     "</div>" },
 		{ "intro",       "<h2>Publications</h2>" },
@@ -44,6 +45,9 @@ public class BuiltinMacros {
 		{ "stylesheet",  "default.css" },
 		{ "author",      "John Doe" },
 		{ "openpaperlist", "<ul class=pubs>" },
-		{ "closepaperlist", "</ul>" }
+		{ "closepaperlist", "</ul>" },
+		{ "pubformat",
+			"\\authors. \\pubtitle.\r\n"
+	      + "\\wherepublished.\r\n" }
 	};
 }

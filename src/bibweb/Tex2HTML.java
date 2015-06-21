@@ -10,10 +10,11 @@ public class Tex2HTML {
 			context.add(builtin_macros[i][0], builtin_macros[i][1]);
 		}
 	}
-	
+
 	public void push() {
 		context.push();
 	}
+
 	public void pop() {
 		context.pop();
 	}
@@ -39,13 +40,16 @@ public class Tex2HTML {
 		while (state != State.EOF) {
 			if (inp.hasNext())
 				c = inp.next();
-			else c = eof;
+			else
+				c = eof;
 			switch (state) {
 			case Normal:
 			case Whitespace:
 			case Start:
 				switch (c) {
-				case eof: state = State.EOF; break;
+				case eof:
+					state = State.EOF;
+					break;
 				case '\\':
 					state = State.Backslash;
 					break;
@@ -81,7 +85,7 @@ public class Tex2HTML {
 				case '\r':
 					if (inp.lookahead() == '\n') {
 						ret.append("\r\n");
-						state=State.Whitespace;
+						state = State.Whitespace;
 					}
 				default:
 					if (Character.isAlphabetic(c) && bracedepth == 0
@@ -105,7 +109,7 @@ public class Tex2HTML {
 				case '\\':
 				case eof:
 					ret.append('\\');
-					state = State.EOF;
+					state = (c == eof) ? State.EOF : State.Normal;
 					break;
 				case '{':
 				case '}':
@@ -118,7 +122,7 @@ public class Tex2HTML {
 					macro_name = new StringBuilder();
 					macro_name.append(c);
 					state = State.ShortMacroArg;
-					break;		
+					break;
 				default:
 					if (Character.isAlphabetic(c)) {
 						macro_name = new StringBuilder();
@@ -140,8 +144,7 @@ public class Tex2HTML {
 				} else if (c == eof) {
 					inp.push(expandMacro(macro_name.toString()));
 					state = State.Normal; // keep going.
-				}
-				else {
+				} else {
 					inp.push(Character.toString(c));
 					inp.push(expandMacro(macro_name.toString()));
 					state = State.Normal;
@@ -177,32 +180,35 @@ public class Tex2HTML {
 		}
 		return ret.toString();
 	}
-	
+
 	private String expandMacro(String macro_name) {
-		//System.out.println("expanding macro \\" + macro_name);
+		// System.out.println("expanding macro \\" + macro_name);
 		try {
 			return context.lookup(macro_name);
 		} catch (LookupFailure e) {
-			return "<em>Don't know how to expand parameterless macro " + macro_name + "</em>";
+			return "<em>Don't know how to expand parameterless macro "
+					+ macro_name + "</em>";
 		}
 	}
 
-	private String expandMacro(String macro_name,
-			String macro_argument) {
+	private String expandMacro(String macro_name, String macro_argument) {
 		assert macro_argument != null;
-		//System.out.println("handling macro \\" + macro_name + "{"
-		//		+ macro_argument + "}");
+		// System.out.println("handling macro \\" + macro_name + "{"
+		// + macro_argument + "}");
 		try {
 			String result = context.lookup(macro_name);
 			return result.replaceAll("#1", macro_argument);
-		} catch (LookupFailure e) {}
-		
+		} catch (LookupFailure e) {
+		}
+
 		try {
 			return context.lookup(macro_name + macro_argument);
-		} catch (LookupFailure e) {}
-		
+		} catch (LookupFailure e) {
+		}
+
 		return "<em>don't know how to expand macro " + macro_name + "</em>";
 	}
+
 	public String lookup(String n) throws LookupFailure {
 		return context.lookup(n);
 	}

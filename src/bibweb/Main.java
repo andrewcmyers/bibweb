@@ -26,6 +26,7 @@ public class Main {
 	HashMap<String, Publication> pubs;
 
 	String bibFile;
+	boolean generated = false;
 	Tex2HTML t2h = new Tex2HTML();
 
 	public static String[] month_names = { "January", "February", "March",
@@ -93,6 +94,9 @@ public class Main {
 				System.err.println("No attribute value at line " + lineno);
 			}
 		}
+		if (!generated) {
+			System.out.println("No 'generate' command found, nothing generated.");
+		}
 	} // runScript
 
 	private void readPublications(Scanner sc) throws FileNotFoundException,
@@ -123,6 +127,7 @@ public class Main {
 			throws TokenMgrException, ParseException,
 			ObjectResolutionException, IOException {
 
+
 		switch (attribute) {
 		case "bibfile":
 			bibFile = value;
@@ -148,6 +153,7 @@ public class Main {
 			}
 			break;
 		case "generate":
+			generated = true;
 			Scanner sc = new Scanner(value);
 			try {
 				generate(sc);
@@ -259,6 +265,7 @@ public class Main {
 
 		String fname = null;
 		PrintWriter w = null;
+		boolean sections = false;
 		try {
 			while (sc.hasNextLine()) {
 				Parsing.AttrValue av = Parsing.parseAttribute(sc);
@@ -282,6 +289,7 @@ public class Main {
 					w.flush();
 					break;
 				case "section":
+					sections = true;
 					Scanner ssc = new Scanner(av.value);
 					try {
 						generateSection(w, ssc);
@@ -292,12 +300,19 @@ public class Main {
 					t2h.addMacro(av.attribute, av.value);
 				}
 			}
-			generateFooter(w);
+			if (w != null) {
+				generateFooter(w);
+			} else {
+				System.out.println("No output file specified in 'generate', no output generated.");
+			}
 
 		} finally {
+			if (sections == false) {
+				System.out.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
+			}
 			sc.close();
 			t2h.pop();
-			w.close();
+			if (w != null) w.close();
 		}
 
 	}
@@ -386,91 +401,105 @@ public class Main {
 //		w.println("</ul>");
 //		w.close();
 //	}
-
-	void generatePub(Publication p, PrintWriter w) {
-
+	
+	static String crlf = "\r\n";
+	String generateTitle(Publication p) {
 		String url = p.url();
-		{
-			w.println("<span class=\"papertitle\">\r\n");
-			if (url != null) {
-				w.print("<a href=\"");
-				w.print(url);
-				w.println("\">");
+		StringBuilder b = new StringBuilder();
+		b.append("<span class=\"papertitle\">");
+		b.append(crlf);
+		if (url != null) {
+			b.append("<a href=\"");
+			b.append(url);
+			b.append("\">");
+		}
+		b.append(expand(p.title(), true));
+		if (url != null)
+			b.append("</a>");
+		b.append("</span>");
+		return b.toString();
+	}
+	
+	String wherePublished(Publication p) {
+		StringBuilder b = new StringBuilder();
+		switch (p.pubType()) {
+		case "inproceedings":
+			String s = p.venue();
+			b.append("<span class=\"conferencename\">\r\n");
+			if (p.venueURL() != null) {
+				b.append("<a href=\"");
+				b.append(p.venueURL());
+				b.append("\">\r\n");
 			}
-			w.print(expand(p.title(), true));
-			if (url != null)
-				w.print("</a>");
-			w.print("</span>"); // papertitle
-			w.println(".<br/>");
+			b.append(expand(s));
+			if (p.venueURL() != null)
+				b.append("</a>");
 
-			switch (p.pubType()) {
-			case "inproceedings":
-				String s = p.venue();
-				w.print("<span class=\"conferencename\">\r\n");
-				if (p.venueURL() != null) {
-					w.print("<a href=\"");
-					w.print(p.venueURL());
-					w.print("\">\r\n");
-				}
-				w.print(expand(s));
-				if (p.venueURL() != null)
-					w.print("</a>");
+			b.append("</span>");
 
-				w.print("</span>");
-
-				String pp = p.pages();
-				if (pp != null)
-					w.print(",\r\npp. " + pp);
+			String pp = p.pages();
+			if (pp != null)
+					b.append(",\r\npp. " + pp);
 				break;
 			case "article":
-				w.print("<span class=journalname>");
+				b.append("<span class=journalname>");
 				if (p.venueURL() != null) {
-					w.print("<a href=\"");
-					w.print(p.venueURL());
-					w.print("\">");
+					b.append("<a href=\"");
+					b.append(p.venueURL());
+					b.append("\">");
 				}
-				w.print(expand(p.venue()));
+				b.append(expand(p.venue()));
 				if (p.venueURL() != null)
-					w.print("</a>");
-				w.print("</span>");
+					b.append("</a>");
+				b.append("</span>");
 				String volume = p.volume();
 				String number = p.number();
 				String pages = p.pages();
 				if (volume != null) {
-					w.print(", ");
-					w.print(volume);
+					b.append(", ");
+					b.append(volume);
 					if (number != null) {
-						w.print("(");
-						w.print(number);
-						w.print(")");
+						b.append("(");
+						b.append(number);
+						b.append(")");
 					}
 					if (pages != null) {
-						w.print(":");
-						w.print(pages);
+						b.append(":");
+						b.append(pages);
 					}
 				}
 				break;
 			case "unpublished":
-				w.print(expand(p.field("note", BibTeXEntry.KEY_NOTE)));
+				b.append(expand(p.field("note", BibTeXEntry.KEY_NOTE)));
 				break;
 			case "software":
-				w.print("Software release");
+				b.append("Software release");
 				break;
 			default:
-				w.print("<strong>(Unhandled publication type " + p.pubType()
+				b.append("<strong>(Unhandled publication type " + p.pubType()
 						+ ")</strong>");
 			}
-			w.print(",\r\n");
+			b.append(",\r\n");
 			if (p.month() == 0) {
-				w.print(p.year());
+				b.append(p.year());
 			} else {
-				w.print(month_names[p.month() - 1]);
-				w.print(" ");
-				w.print(p.year());
+				b.append(month_names[p.month() - 1]);
+				b.append(" ");
+				b.append(p.year());
 			}
-			w.print(".\r\n");
-			w.print(formattedAuthors(p));
-			w.println(".");
-		}
+			return b.toString();
+	}
+
+	void generatePub(Publication p, PrintWriter w) {
+		t2h.push();
+		String title = generateTitle(p);
+		String where_published = wherePublished(p);
+		String authors = formattedAuthors(p);
+		t2h.addMacro("pubtitle",  title);
+		t2h.addMacro("wherepublished", where_published);
+		t2h.addMacro("authors", authors);
+		try {
+			w.println(expand("\\pubformat"));
+		} finally { t2h.pop(); }
 	}
 }
