@@ -1,2 +1,7 @@
 #!/bin/sh
-java -cp bin bibweb.Main $*
+if [ -d bin ]
+then
+    java -cp bin bibweb.Main $*
+else
+    java -cp bibweb.jar bibweb.Main $*
+fi
