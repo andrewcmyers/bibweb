@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -371,14 +372,16 @@ public class Main {
 	}
 
 	private void generateSection(PrintWriter w, Scanner ssc) {
-		Set<Publication> selected = new HashSet<>();
+		Collection<Publication> selected = new HashSet<>();
 		// System.out.println("Starting new section");
 		t2h.push();
+		boolean any_select = false;
 		try {
 			while (ssc.hasNextLine()) {
 				Parsing.AttrValue av = Parsing.parseAttribute(ssc);
 				switch (av.attribute) {
 				case "select":
+					any_select = true;
 					Filter filter = new AllFilter();
 					Scanner sssc = new Scanner(av.value);
 					try {
@@ -400,6 +403,9 @@ public class Main {
 					break;
 				}
 			}
+			if (!any_select)
+				selected = pubs.values();
+			
 			Publication[] pa = selected.toArray(new Publication[0]);
 			// System.out.println("Selected " + pa.length
 			// + " publications for this section.");
