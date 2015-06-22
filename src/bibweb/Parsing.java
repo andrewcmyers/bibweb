@@ -9,6 +9,7 @@ public class Parsing {
 		StringBuilder b = new StringBuilder();
 		while (sc.hasNextLine()) {
 			String s = sc.nextLine();
+			if (s.length() > 0 && s.charAt(0) == '%') continue;
 			if (s.length() > 0 && s.charAt(0) == '.') {
 				s = s.substring(1);
 				if (s.length() == 0)

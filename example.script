@@ -15,8 +15,17 @@ pubs:
 ..
 .
 
+% comment
+
 generate:
 .output: example.html
 .section:
+..intro: <h2>All publications</h2>
+..
+.section:
+..intro: <h2>Publications by Andrew Gordon</h2>
+..select:
+...author: Andrew D. Gordon
+...
 ..
 .

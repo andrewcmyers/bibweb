@@ -96,7 +96,9 @@ public class Publication {
 
 	String pubType() {
 		if (defns.containsKey("pubtype")) return defns.get("pubtype");
-		return entry().getType().getValue().toLowerCase();
+		BibTeXEntry e = entry();
+		if (e == null) return "unknown";
+		else return e.getType().getValue().toLowerCase();
 	}
 
 	String venue() {
@@ -119,12 +121,23 @@ public class Publication {
 		return auths.toArray(new String[0]);
 	}
 
+	public String bibtexYear() {
+		return field("year", BibTeXEntry.KEY_YEAR);
+	}
 	int year() {
-		return Integer.parseInt(field("year", BibTeXEntry.KEY_YEAR));
+		try {
+		return Integer.parseInt(bibtexYear());
+		} catch (NumberFormatException e) {
+			System.err.println("Bad year in publication " + key);
+			return 0;
+		}
 	}
 
+	public String bibtexMonth() {
+		return field("month", BibTeXEntry.KEY_MONTH);
+	}
 	int month() {
-		String m = field("month", BibTeXEntry.KEY_MONTH);
+		String m = bibtexMonth();
 		for (int i = 0; i < 12; i++)
 			if (Main.month_names[i].equals(m))
 				return i + 1;
@@ -137,4 +150,6 @@ public class Publication {
 	String volume() {
 		return field("volume", BibTeXEntry.KEY_VOLUME);
 	}
+
+
 }

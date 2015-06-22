@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
@@ -100,9 +101,16 @@ public class Main {
 			}
 		}
 	}
+	
+	void addEnvMacros() {
+		t2h.addMacro("HOME", System.getenv("HOME"));
+		t2h.addMacro("USER", System.getenv("USER"));
+		t2h.addMacro("DATE", new Date().toString());
+	}
 
 	void run() {
 		parseArgs();
+		addEnvMacros();
 
 		try {
 			Scanner sc = new Scanner(new FileReader(inputFile));
@@ -179,7 +187,7 @@ public class Main {
 		case "bibfile":
 			bibFile = value;
 			BibTeXParser parser = new BibTeXParser();
-			db = parser.parseFully(new FileReader(bibFile));
+			db = parser.parseFully(new FileReader(expand(bibFile)));
 			System.out.println("Found " + db.getObjects().size()
 					+ " objects in BibTeX file.");
 			break;
@@ -295,12 +303,8 @@ public class Main {
 			return new Filter() {
 				public boolean select(Publication p) {
 					for (String a : p.authors()) {
-						try {
-							if (a.equals(t2h.lookup("author")))
-								return true;
-						} catch (Context.LookupFailure e) {
-							return false;
-						}
+						if (a.equals(selector.value))
+							return true;
 					}
 					return false;
 				}
@@ -533,8 +537,23 @@ public class Main {
 		String where_published = wherePublished(p);
 		String authors = formattedAuthors(p);
 		t2h.addMacro("pubtitle", title);
+		t2h.addMacro("bibtexTitle", p.title());
 		t2h.addMacro("wherepublished", where_published);
 		t2h.addMacro("authors", authors);
+		t2h.addMacro("bibtexAuthors", p.author());
+		t2h.addMacro("pubtype", p.pubType());
+		if (p.url() != null) t2h.addMacro("paperurl", p.url());
+		t2h.addMacro("venue", p.venue());
+		t2h.addMacro("key", p.key);
+		t2h.addMacro("year", p.bibtexYear());
+		for (String name : p.defns.keySet()) {
+			t2h.addMacro(name,  p.defns.get(name));
+		}
+		if (p.bibtexMonth() != null)
+			t2h.addMacro("month", p.bibtexMonth());
+		if (p.pages() != null)
+			t2h.addMacro("pages", p.pages());
+
 		try {
 			w.println(expand("\\pubformat"));
 		} finally {

@@ -3,14 +3,17 @@ package bibweb;
 public class BuiltinMacros {
 	static String[][] macros = {
 		{ "url", "<a href=\"#1\">#1</a>" },
-		{ "textsuperscript", "<span class=ordinal>#1</span>" },
 		{ "'e", "&eacute;" },
+		{ "'i", "&iacute;" },
 		{ "\"u", "&uuml;" },
 		{ "\"o", "&ouml;" },
 		{ "\"a", "&auml;" },
-		{ "-", "-" },
+		{ "\\{", "{" },
+		{ "\\}", "}" },
 		{ "--", "&ndash;" },
 		{ "---", "&mdash;" },
+		{ "~", "&nbsp;" },
+		{ "textsuperscript", "<span class=ordinal>#1</span>" },
 		{ "header",
 			"\\doctype\r\n" +
 			"<html>\r\n" +
@@ -48,6 +51,14 @@ public class BuiltinMacros {
 		{ "closepaperlist", "</ul>" },
 		{ "pubformat",
 			"\\authors. \\pubtitle.\r\n"
-	      + "\\wherepublished.\r\n" }
+	      + "\\wherepublished.\r\n" },
+	    { "\\authors", "(formatted author list)" },
+	    { "\\pubtitle", "(title of this publication)" },
+	    { "\\wherepublished", "(publication venue and pages)" },
+	    { "\\year", "(year of this publication)" },
+	    // ifdef
+	    // ifndef
+	    // true
+	    // false
 	};
 }

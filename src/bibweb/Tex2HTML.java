@@ -1,5 +1,9 @@
 package bibweb;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
+
 import bibweb.Context.LookupFailure;
 
 public class Tex2HTML {
@@ -7,7 +11,9 @@ public class Tex2HTML {
 	{
 		String[][] builtin_macros = BuiltinMacros.macros;
 		for (int i = 0; i < builtin_macros.length; i++) {
-			context.add(builtin_macros[i][0], builtin_macros[i][1]);
+			String rhs = builtin_macros[i][1];
+			int n = rhs.contains("#1") ? 1 : 0;
+			context.add(builtin_macros[i][0], builtin_macros[i][1], n);
 		}
 	}
 
@@ -20,20 +26,65 @@ public class Tex2HTML {
 	}
 
 	public void addMacro(String from, String to) {
-		context.add(from, to);
+		context.add(from, to, 0);
+	}
+
+	public void addMacro(String from, String to, int n) {
+		context.add(from, to, n);
+	}
+
+	static class StateX {
+		public final State tag;
+
+		StateX(State normal) {
+			tag = normal;
+		}
+	}
+
+	class Normal extends StateX {
+		Normal() {
+			super(State.Normal);
+		}
+	}
+
+	class Backslash extends StateX {
+		Backslash() {
+			super(State.Backslash);
+		}
+	}
+
+	class LongMacroArg extends StateX {
+
+		LongMacroArg() {
+			super(State.LongMacroArg);
+		}
+	}
+
+	class EOF extends StateX {
+		EOF() {
+			super(State.EOF);
+		}
 	}
 
 	private static enum State {
-		Normal, Backslash, AlphMacroName, LongMacroArg, ShortMacroArg, Whitespace, Start, EOF
+		Normal, Backslash, AlphMacroName, ShortMacroArg, LongMacroArg, EOF, Start, Whitespace
+	}
+	
+	static Set<String> special_macros = new HashSet<>();
+	{
+		special_macros.add("ifdef");
+		special_macros.add("ifndef");
+		special_macros.add("true");
+		special_macros.add("false");
 	}
 
 	String convert(String s, boolean sentence_case) throws T2HErr {
 		State state = State.Start;
-		int bracedepth = 0;
 		StringBuilder macro_name = null;
 		StringBuilder macro_argument = null;
 		StringBuilder ret = new StringBuilder();
 		final char eof = (char) -1;
+		int bracedepth = 0;
 
 		Input inp = new StringInput(s);
 		char c;
@@ -58,9 +109,8 @@ public class Tex2HTML {
 					state = State.Normal;
 					break;
 				case '}':
-					if (bracedepth == 0)
-						throw new T2HErr(
-								"More closing braces than opening ones");
+					if (bracedepth <= 0)
+						throw new T2HErr("More closing braces than opening ones");
 					bracedepth--;
 					state = State.Normal;
 					break;
@@ -88,12 +138,12 @@ public class Tex2HTML {
 						state = State.Whitespace;
 					}
 				default:
-					if (Character.isAlphabetic(c) && bracedepth == 0
-							&& sentence_case && state != State.Start) {
+					if (Character.isAlphabetic(c) && sentence_case && bracedepth == 0 && state != State.Start) {
 						ret.append(Character.toLowerCase(c));
 						state = State.Normal;
 					} else if (Character.isWhitespace(c)
 							&& state != State.Normal) {
+						// consume extra whitespace
 						state = State.Whitespace;
 					} else {
 						ret.append(c);
@@ -141,20 +191,37 @@ public class Tex2HTML {
 				} else if (c == '{') {
 					state = State.LongMacroArg;
 					macro_argument = new StringBuilder();
-				} else if (c == eof) {
-					inp.push(expandMacro(macro_name.toString()));
-					state = State.Normal; // keep going.
+					bracedepth = 1;
 				} else {
-					inp.push(Character.toString(c));
-					inp.push(expandMacro(macro_name.toString()));
+					if (c != eof) inp.push(Character.toString(c));
+					String name = macro_name.toString();
+					if (special_macros.contains(name)) {
+						throw new T2HErr("Special macro \\" + name + " expects argument in braces");
+					} else {
+						inp.push(expandMacro(name));
+					}
 					state = State.Normal;
 				}
 				break;
-			case LongMacroArg: // in between braces
-				if (c == '}') {
-					inp.push(expandMacro(macro_name.toString(),
-							macro_argument.toString()));
-					state = State.Normal;
+			case LongMacroArg: // in middle of argument held in braces
+				if (c == '{') {
+					macro_argument.append(c);
+					bracedepth++;
+					// state = State.LongMacroArg;
+				} else if (c == '}') {
+					bracedepth--;
+					assert bracedepth >= 0;
+					if (bracedepth == 0) {
+						String name = macro_name.toString(),
+								arg = macro_argument.toString();
+						if (special_macros.contains(name)) {
+							handleSpecialMacro(inp, name, arg);
+						} else {
+							inp.push(expandMacro(name, arg));
+						}
+						state = State.Normal;
+					}
+					// else stay in state
 				} else if (c == eof) {
 					throw new T2HErr("unexpected end to macro argument.");
 				} else {
@@ -165,12 +232,13 @@ public class Tex2HTML {
 			case ShortMacroArg:
 				if (c == '{') {
 					state = State.LongMacroArg;
+					bracedepth = 1;
 					macro_argument = new StringBuilder();
 				} else if (c == eof) {
-					inp.push(expandMacro(macro_name.toString(), "" + c));
+					inp.push(expandMacro(macro_name.toString(), ""));
 					state = State.Normal;
 				} else {
-					inp.push(expandMacro(macro_name.toString(), "" + c));
+					inp.push(expandMacro(macro_name.toString(), Character.toString(c)));
 					state = State.Normal;
 				}
 				break;
@@ -181,13 +249,39 @@ public class Tex2HTML {
 		return ret.toString();
 	}
 
+	boolean inScope(String name) {
+		try {
+			context.lookup(name);
+			return true;
+		} catch (LookupFailure f) {
+		}
+		return false;
+		}
+
+	private void handleSpecialMacro(Input inp, String name, String arg) {
+		switch (name) {
+		case "true": inp.push(arg); break;
+		case "false": break;
+		case "ifdef":
+			if (arg.charAt(0) == '\\') arg = arg.substring(1);
+			inp.push(inScope(arg) ? "\\true" : "\\false");
+			break;
+		case "ifndef":
+			if (arg.charAt(0) == '\\') arg = arg.substring(1);
+			inp.push(inScope(arg) ? "\\false" : "\\true");
+			break;
+		default:
+			throw new Error("Not a special macro: " + name);
+		}
+	}
+
 	private String expandMacro(String macro_name) {
 		// System.out.println("expanding macro \\" + macro_name);
 		try {
 			return context.lookup(macro_name);
 		} catch (LookupFailure e) {
 			return "<em>Don't know how to expand parameterless macro "
-					+ macro_name + "</em>";
+							+ macro_name + "</em>";
 		}
 	}
 

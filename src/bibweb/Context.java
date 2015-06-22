@@ -7,6 +7,20 @@ public class Context {
 
 	Node bottom = new Node(null); // may not be null
 
+	static class Expansion {
+		String rhs;
+		int num_args;
+
+		Expansion(String s, int n) {
+			rhs = s;
+			num_args = n;
+		}
+
+		Expansion(String s) {
+			this(s, 0);
+		}
+	}
+
 	static class Node {
 		Map<String, String> macros = new HashMap<>();
 		Node up; // may be null
@@ -21,8 +35,11 @@ public class Context {
 	public String lookup(String name) throws LookupFailure {
 		Node n = bottom;
 		while (n != null) {
-			if (n.macros.containsKey(name))
-				return n.macros.get(name);
+			if (n.macros.containsKey(name)) {
+				String result = n.macros.get(name);
+				assert result != null;
+				return result;
+			}
 			n = n.up;
 		}
 		throw lookupFailed;		
@@ -37,7 +54,8 @@ public class Context {
 		bottom = bottom.up;
 	}
 	
-	public void add(String name, String defn) {
+	public void add(String name, String defn, int num_args) {
+		assert defn != null;
 		bottom.macros.put(name,  defn);
 	}
 }
