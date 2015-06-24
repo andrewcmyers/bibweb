@@ -10,9 +10,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.jbibtex.BibTeXDatabase;
@@ -22,15 +22,19 @@ import org.jbibtex.ObjectResolutionException;
 import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
+import bibweb.PubInfoImpl.GetPubCtxt;
+
 public class Main {
 	String[] args;
 	String inputFile;
 	BibTeXDatabase db;
 	HashMap<String, Publication> pubs;
+	/** Records the generated namespace for each publication. */
+	Map<Publication, Namespace> pub_defns = new HashMap<>();
 
 	String bibFile;
 	boolean generated = false;
-	Tex2HTML t2h = new Tex2HTML();
+	Tex2HTML t2h;
 
 	public static String[] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
@@ -44,6 +48,12 @@ public class Main {
 
 	Main(String[] args) {
 		this.args = args;
+		pubs = new HashMap<String, Publication>();
+		t2h = new Tex2HTML(new PubInfoImpl(pubs, new GetPubCtxt() {
+			public Namespace get(Publication p) {
+				return getPubCtxt(p);
+			}
+		}));
 	}
 
 	public static void usage() {
@@ -134,8 +144,6 @@ public class Main {
 		}
 	}
 
-	int lineno = 0;
-
 	Pattern colon = Pattern.compile("\\s*:\\s*");
 
 	private void runScript(Scanner sc) throws IOException, TokenMgrException,
@@ -154,10 +162,12 @@ public class Main {
 					.println("No 'generate' command found, nothing generated.");
 		}
 	} // runScript
+	
+	int lineno;
 
 	private void readPublications(Scanner sc) throws FileNotFoundException,
 			IOException {
-		pubs = new HashMap<String, Publication>();
+
 		while (sc.hasNextLine()) {
 			lineno++;
 
@@ -432,7 +442,7 @@ public class Main {
 	Comparator<Publication> byYear = new Comparator<Publication>() {
 		@Override
 		public int compare(Publication o1, Publication o2) {
-			return o2.year() - o1.year();
+			return (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
 		}
 	};
 	Comparator<Publication> byType = new Comparator<Publication>() {
@@ -516,6 +526,12 @@ public class Main {
 		case "software":
 			b.append("Software release");
 			break;
+		case "techreport":
+			b.append("Technical report ");
+			b.append(p.number());
+			b.append(", ");
+			b.append(p.institution());
+			break;
 		default:
 			b.append("<strong>(Unhandled publication type " + p.pubType()
 					+ ")</strong>");
@@ -530,30 +546,43 @@ public class Main {
 		}
 		return b.toString();
 	}
+	
+	Namespace getPubCtxt(Publication p) {
+		System.out.println("looking up pub " + p);
+		if (pub_defns.containsKey(p)) {
+			assert pub_defns.get(p) != null;
+			return pub_defns.get(p);
+		}
 
-	void generatePub(Publication p, PrintWriter w) {
-		t2h.push();
 		String title = generateTitle(p);
 		String where_published = wherePublished(p);
 		String authors = formattedAuthors(p);
-		t2h.addMacro("pubtitle", title);
-		t2h.addMacro("bibtexTitle", p.title());
-		t2h.addMacro("wherepublished", where_published);
-		t2h.addMacro("authors", authors);
-		t2h.addMacro("bibtexAuthors", p.author());
-		t2h.addMacro("pubtype", p.pubType());
-		if (p.url() != null) t2h.addMacro("paperurl", p.url());
-		t2h.addMacro("venue", p.venue());
-		t2h.addMacro("key", p.key);
-		t2h.addMacro("year", p.bibtexYear());
-		for (String name : p.defns.keySet()) {
-			t2h.addMacro(name,  p.defns.get(name));
-		}
-		if (p.bibtexMonth() != null)
-			t2h.addMacro("month", p.bibtexMonth());
-		if (p.pages() != null)
-			t2h.addMacro("pages", p.pages());
+		
+		Context ctxt = new Context();
+		ctxt.add("pubtitle", title);
+		ctxt.add("bibtexTitle", p.title());
+		ctxt.add("wherepublished", where_published);
+		ctxt.add("authors", authors);
+		ctxt.add("bibtexAuthors", p.author());
+		ctxt.add("pubtype", p.pubType());
+		if (p.url() != null) ctxt.add("paperurl", p.url());
+		ctxt.add("venue", p.venue());
+		ctxt.add("key", p.key);
+		ctxt.add("year", p.bibtexYear());
 
+		if (p.bibtexMonth() != null)
+			ctxt.add("month", p.bibtexMonth());
+		if (p.pages() != null)
+			ctxt.add("pages", p.pages());
+		for (String name : p.defns.keySet()) {
+			ctxt.add(name,  p.defns.get(name));
+		}
+		pub_defns.put(p,  ctxt);
+		return ctxt;
+	}
+
+	void generatePub(Publication p, PrintWriter w) {
+		t2h.push(getPubCtxt(p));
 		try {
 			w.println(expand("\\pubformat"));
 		} finally {

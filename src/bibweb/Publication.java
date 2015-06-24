@@ -18,6 +18,7 @@ public class Publication {
 	Key bibkey;
 	ArrayList<String> topics;
 	Map<String, String> defns = new HashMap<>();
+	Namespace bindings;
 	BibTeXDatabase db;
 
 	Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
@@ -53,6 +54,7 @@ public class Publication {
 	public String toString() {
 		return key;
 	}
+	
 
 	BibTeXEntry entry() {
 		return db.getEntries().get(bibkey);
@@ -113,7 +115,7 @@ public class Publication {
 		ArrayList<String> auths = new ArrayList<String>();
 		String a = author();
 		Scanner sc = new Scanner(a);
-		sc.useDelimiter("(\\s)*and(\\s)*");
+		sc.useDelimiter("(\\s)(\\s)*and(\\s)(\\s)*");
 		while (sc.hasNext()) {
 			auths.add(sc.next());
 		}
@@ -149,6 +151,10 @@ public class Publication {
 	}
 	String volume() {
 		return field("volume", BibTeXEntry.KEY_VOLUME);
+	}
+
+	public String institution() {
+		return field("institution", BibTeXEntry.KEY_INSTITUTION);
 	}
 
 

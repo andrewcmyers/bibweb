@@ -1,20 +1,23 @@
 package bibweb;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 
-import bibweb.Context.LookupFailure;
+import bibweb.Namespace.LookupFailure;
 
 public class Tex2HTML {
 	Context context = new Context();
+	private PubInfo pub_info;
+	
+	Tex2HTML(PubInfo pub_info)
 	{
 		String[][] builtin_macros = BuiltinMacros.macros;
 		for (int i = 0; i < builtin_macros.length; i++) {
-			String rhs = builtin_macros[i][1];
-			int n = rhs.contains("#1") ? 1 : 0;
-			context.add(builtin_macros[i][0], builtin_macros[i][1], n);
+			context.add(builtin_macros[i][0], builtin_macros[i][1]);
 		}
+		this.pub_info = pub_info;
 	}
 
 	public void push() {
@@ -26,62 +29,35 @@ public class Tex2HTML {
 	}
 
 	public void addMacro(String from, String to) {
-		context.add(from, to, 0);
-	}
-
-	public void addMacro(String from, String to, int n) {
-		context.add(from, to, n);
-	}
-
-	static class StateX {
-		public final State tag;
-
-		StateX(State normal) {
-			tag = normal;
-		}
-	}
-
-	class Normal extends StateX {
-		Normal() {
-			super(State.Normal);
-		}
-	}
-
-	class Backslash extends StateX {
-		Backslash() {
-			super(State.Backslash);
-		}
-	}
-
-	class LongMacroArg extends StateX {
-
-		LongMacroArg() {
-			super(State.LongMacroArg);
-		}
-	}
-
-	class EOF extends StateX {
-		EOF() {
-			super(State.EOF);
-		}
+		context.add(from, to);
 	}
 
 	private static enum State {
-		Normal, Backslash, AlphMacroName, ShortMacroArg, LongMacroArg, EOF, Start, Whitespace
+		Start,         // beginning of string
+		Normal,
+		Whitespace,    // previous char was regular whitespace
+		Backslash,     // just saw a backslash
+		AlphMacroName, // in middle of (or at end of) alphabetic macro name
+		FullMacro,     // seen a complete macro invocation, but possibly some arguments still to come
+		ShortMacroArg, // seen a non-alphabetic macro name, looking for short or long argument
+		LongMacroArg,  // in middle of parsing a long macro arg (in braces)
+		EOF            // end of file seen
 	}
 	
 	static Set<String> special_macros = new HashSet<>();
 	{
 		special_macros.add("ifdef");
 		special_macros.add("ifndef");
-		special_macros.add("true");
-		special_macros.add("false");
+		special_macros.add("ifeq");
+		special_macros.add("ifne");
+		special_macros.add("pubinfo");
 	}
 
 	String convert(String s, boolean sentence_case) throws T2HErr {
 		State state = State.Start;
 		StringBuilder macro_name = null;
-		StringBuilder macro_argument = null;
+		List<String> macro_args = null;
+		StringBuilder cur_arg = null;
 		StringBuilder ret = new StringBuilder();
 		final char eof = (char) -1;
 		int bracedepth = 0;
@@ -164,6 +140,8 @@ public class Tex2HTML {
 				case '{':
 				case '}':
 				case '-':
+				case '&':
+				case '#':
 					ret.append(c);
 					state = State.Normal;
 					break;
@@ -179,9 +157,10 @@ public class Tex2HTML {
 						macro_name.append(c);
 						state = State.AlphMacroName;
 						break;
-					} else
+					} else {
 						throw new T2HErr("Unexpected char after backslash: "
 								+ c);
+					}
 				}
 				break;
 			case AlphMacroName:
@@ -190,13 +169,14 @@ public class Tex2HTML {
 					// stay in state
 				} else if (c == '{') {
 					state = State.LongMacroArg;
-					macro_argument = new StringBuilder();
+					macro_args = new ArrayList<>();
+					cur_arg = new StringBuilder();
 					bracedepth = 1;
 				} else {
 					if (c != eof) inp.push(Character.toString(c));
 					String name = macro_name.toString();
 					if (special_macros.contains(name)) {
-						throw new T2HErr("Special macro \\" + name + " expects argument in braces");
+						throw new T2HErr("Unexpected character \'" + c + "\': special macro \\" + name + " expects argument in braces");
 					} else {
 						inp.push(expandMacro(name));
 					}
@@ -205,40 +185,55 @@ public class Tex2HTML {
 				break;
 			case LongMacroArg: // in middle of argument held in braces
 				if (c == '{') {
-					macro_argument.append(c);
+					cur_arg.append(c);
 					bracedepth++;
 					// state = State.LongMacroArg;
 				} else if (c == '}') {
 					bracedepth--;
 					assert bracedepth >= 0;
 					if (bracedepth == 0) {
-						String name = macro_name.toString(),
-								arg = macro_argument.toString();
-						if (special_macros.contains(name)) {
-							handleSpecialMacro(inp, name, arg);
-						} else {
-							inp.push(expandMacro(name, arg));
-						}
-						state = State.Normal;
+						state = State.FullMacro;
+						macro_args.add(cur_arg.toString());
+					} else {
+						cur_arg.append(c);
 					}
 					// else stay in state
 				} else if (c == eof) {
 					throw new T2HErr("unexpected end to macro argument.");
 				} else {
-					macro_argument.append(c);
+					cur_arg.append(c);
 					// stay in state
+				}
+				break;
+			case FullMacro:
+				if (c == '{') {
+					bracedepth++;
+					state = State.LongMacroArg;
+					cur_arg = new StringBuilder();
+				} else {
+					String name = macro_name.toString();
+					inp.push(Character.toString(c));
+					if (special_macros.contains(name)) {
+						handleSpecialMacro(inp, name, macro_args);
+					} else {
+						inp.push(expandMacro(name, macro_args));
+					}
+					state = State.Normal;
 				}
 				break;
 			case ShortMacroArg:
 				if (c == '{') {
 					state = State.LongMacroArg;
 					bracedepth = 1;
-					macro_argument = new StringBuilder();
+					cur_arg = new StringBuilder();
 				} else if (c == eof) {
-					inp.push(expandMacro(macro_name.toString(), ""));
+					inp.push(expandMacro(macro_name.toString(), new ArrayList<String>()));
 					state = State.Normal;
 				} else {
-					inp.push(expandMacro(macro_name.toString(), Character.toString(c)));
+					List<String> args = new ArrayList<String>();
+					args.add(Character.toString(c));
+					cur_arg = new StringBuilder();
+					inp.push(expandMacro(macro_name.toString(), args));
 					state = State.Normal;
 				}
 				break;
@@ -258,20 +253,35 @@ public class Tex2HTML {
 		return false;
 		}
 
-	private void handleSpecialMacro(Input inp, String name, String arg) {
+	private void handleSpecialMacro(Input inp, String name, List<String> args) throws T2HErr {
+//		 System.out.println("handling special macro \\" + name + args);
 		switch (name) {
-		case "true": inp.push(arg); break;
-		case "false": break;
 		case "ifdef":
-			if (arg.charAt(0) == '\\') arg = arg.substring(1);
-			inp.push(inScope(arg) ? "\\true" : "\\false");
-			break;
 		case "ifndef":
-			if (arg.charAt(0) == '\\') arg = arg.substring(1);
-			inp.push(inScope(arg) ? "\\false" : "\\true");
+			if (args.size() != 2) throw new T2HErr("\\ifdef and \\ifndef expect 2 arguments");
+			String n = args.get(0);
+			if (n.charAt(0) == '\\') n = n.substring(1);
+			if (inScope(n) == name.equals("ifdef"))
+				inp.push(args.get(1));
+			break;
+		case "ifeq":
+		case "ifne":
+			if (args.size() != 3) throw new T2HErr("\\ifeq and \\ifne expect 3 arguments");
+			String e1 = convert(args.get(0), false),
+					e2 = convert(args.get(1), false);
+			if (e1.equals(e2) == name.equals("ifeq"))
+				inp.push(args.get(2));
+			break;
+		case "pubinfo":
+			if (args.size() != 2) throw new T2HErr("Usage: \\pubinfo{key}{field}");
+
+			String key = convert(args.get(0), false);
+			String field = convert(args.get(1), false);
+			System.out.println("looking up pubinfo on " + key + "," + field);
+			try { inp.push(pub_info.lookup(key, field)); } catch (LookupFailure e) {}
 			break;
 		default:
-			throw new Error("Not a special macro: " + name);
+			throw new Error("Internal error: Not a special macro: " + name);
 		}
 	}
 
@@ -285,13 +295,16 @@ public class Tex2HTML {
 		}
 	}
 
-	private String expandMacro(String macro_name, String macro_argument) {
+	private String expandMacro(String macro_name, List<String> macro_argument) {
 		assert macro_argument != null;
-		// System.out.println("handling macro \\" + macro_name + "{"
-		// + macro_argument + "}");
+//		 System.out.println("handling macro \\" + macro_name 
+//		 + macro_argument);
 		try {
 			String result = context.lookup(macro_name);
-			return result.replaceAll("#1", macro_argument);
+			for (int i = 0; i < macro_argument.size(); i++) {
+				result = result.replaceAll("#" + (i+1), macro_argument.get(i));
+			}
+			return result;
 		} catch (LookupFailure e) {
 		}
 
@@ -305,5 +318,9 @@ public class Tex2HTML {
 
 	public String lookup(String n) throws LookupFailure {
 		return context.lookup(n);
+	}
+
+	public void push(Namespace n) {
+		context.push(n);
 	}
 }

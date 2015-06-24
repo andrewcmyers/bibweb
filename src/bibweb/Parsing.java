@@ -5,6 +5,8 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class Parsing {
+	int lineno;
+	
 	public static String readMultiline(Scanner sc) {
 		StringBuilder b = new StringBuilder();
 		while (sc.hasNextLine()) {

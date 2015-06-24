@@ -14,6 +14,7 @@ public class BuiltinMacros {
 		{ "---", "&mdash;" },
 		{ "~", "&nbsp;" },
 		{ "textsuperscript", "<span class=ordinal>#1</span>" },
+		{ "texttt", "<tt>#1</tt>" },
 		{ "header",
 			"\\doctype\r\n" +
 			"<html>\r\n" +

@@ -1,61 +1,82 @@
 package bibweb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class Context {
+public class Context implements Namespace {
+	interface Node {
+		String get(String name) throws LookupFailure;
+		void put(String name, String value);
+	}
+	static class FixedNode implements Node {
+		Namespace fixed_mappings; // may be null
 
-	Node bottom = new Node(null); // may not be null
-
-	static class Expansion {
-		String rhs;
-		int num_args;
-
-		Expansion(String s, int n) {
-			rhs = s;
-			num_args = n;
+		public FixedNode(Namespace n) {
+			fixed_mappings = n;
 		}
 
-		Expansion(String s) {
-			this(s, 0);
+		@Override
+		public String get(String name) throws LookupFailure {
+			return fixed_mappings.lookup(name);
+		}
+
+		@Override
+		public void put(String name, String value) {
+			throw new UnsupportedOperationException();
+		}
+	}
+	static class MutableNode implements Node {
+		Map<String, String> mappings = new HashMap<>();
+
+		@Override
+		public String get(String name) throws LookupFailure {
+			if (mappings.containsKey(name))
+				return mappings.get(name);
+			else
+				throw lookupFailed;
+		}
+
+		@Override
+		public void put(String name, String value) {
+			mappings.put(name, value);			
 		}
 	}
 
-	static class Node {
-		Map<String, String> macros = new HashMap<>();
-		Node up; // may be null
-		
-		Node(Node above) { up = above; }
+	List<Node> nodes;
+	{
+		nodes = new ArrayList<Node>();
+		nodes.add(new MutableNode());
 	}
-	static public class LookupFailure extends Exception {
-		private static final long serialVersionUID = 1L;}
-	static LookupFailure lookupFailed = new LookupFailure();
+
+	static public LookupFailure lookupFailed = new LookupFailure();
 	
-
 	public String lookup(String name) throws LookupFailure {
-		Node n = bottom;
-		while (n != null) {
-			if (n.macros.containsKey(name)) {
-				String result = n.macros.get(name);
-				assert result != null;
-				return result;
+		for (int i = nodes.size() - 1; i >= 0; i--) {
+			Node n = nodes.get(i);
+			try {
+				return n.get(name);
+			} catch (LookupFailure e) {
+				// try the next node up the stack
 			}
-			n = n.up;
 		}
 		throw lookupFailed;		
 	}
 
 	public void push() {
-		Node n = new Node(bottom);
-		bottom = n;
+		nodes.add(new MutableNode());
+	}
+	public void push(Namespace n) {
+		nodes.add(new FixedNode(n));
 	}
 
 	public void pop() {
-		bottom = bottom.up;
+		nodes.remove(nodes.size()-1);
 	}
 	
-	public void add(String name, String defn, int num_args) {
+	public void add(String name, String defn) {
 		assert defn != null;
-		bottom.macros.put(name,  defn);
+		nodes.get(nodes.size()-1).put(name,  defn);
 	}
 }
