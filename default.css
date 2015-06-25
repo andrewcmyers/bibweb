@@ -1,7 +1,5 @@
 body, p, ul {
-    /* font-family: "Goudy Old Stout", "Goudy Old Style", "Garamond", "Palatino",
-	"urw palladio l", times, serif; */
-    font-family: "Open Sans", "Cronos Pro", "Calibri", "TW Cen MT", "Gill Sans", Helvetica, sans-serif;
+    font-family: "Calibri", "TW Cen MT", "Gill Sans", Helvetica, sans-serif;
 }
 
 body {

@@ -562,6 +562,9 @@ public class Main {
 			b.append("Master's thesis, ");
 			b.append(p.school());
 			break;
+		case "misc":
+			b.append(p.field("howpublished", BibTeXEntry.KEY_HOWPUBLISHED));
+			break;
 		default:
 			b.append("<strong>(Unhandled publication type " + p.pubType()
 					+ ")</strong>");
