@@ -4,12 +4,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.BibTeXParser;
+import org.jbibtex.Key;
 import org.jbibtex.ObjectResolutionException;
 import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
@@ -341,8 +344,14 @@ public class Main {
 			};
 		case "all":
 			return new AllFilter();
+		default:
+			return new Filter() {
+				public boolean select(Publication p) {
+					String v = p.field(selector.attribute, new Key(selector.attribute));
+					return (v != null && selector.value.equals(v));
+				}
+			};
 		}
-		return new AllFilter();
 	}
 
 	private void generate(Scanner gsc) {
@@ -418,18 +427,21 @@ public class Main {
 					any_select = true;
 					Filter filter = new AllFilter();
 					Scanner sssc = new Scanner(av.value);
+					List<Filter> filters = new ArrayList<Filter>();
 					try {
 						while (sssc.hasNextLine()) {
 							final Parsing.AttrValue selector = Parsing
 									.parseAttribute(sssc);
-							filter = createFilter(selector);
-							for (Publication p : pubs.values()) {
-								if (filter.select(p))
-									selected.add(p);
-							}
+							filters.add(createFilter(selector));
 						}
 					} finally {
 						sssc.close();
+					}
+					nextpub: for (Publication p : pubs.values()) {
+						for (Filter f : filters) {
+							if (!f.select(p)) continue nextpub;
+						}
+						selected.add(p);
 					}
 					break;
 				default:
