@@ -8,7 +8,8 @@ body {
     color: black;
     margin-top: 0px;
     margin-left: 0px;
-    margin-bottom: 0px
+    margin-bottom: 0px;
+    width: 100%;
 }
 
 div.nav {
@@ -31,6 +32,13 @@ div.nav ul li { list-style-type: none;
 		text-indent: -1em;
 		margin-left: 1em }
 p { font-size: 100%; max-width: 40em; }
+p.credits {
+    font-size: smaller;
+    text-align: right;
+    width: 100%;
+    max-width: 100%;
+    padding-right: 1em;
+}
 div.awards { margin-left: 5ex; }
 p.paperlist { margin-left: 5ex; max-width: 120ex; }
 p.textblock { margin-left: 4%; min-width: 25ex; max-width: 60ex; text-align: left}
@@ -54,7 +62,7 @@ div.offpage {
     margin: 0 auto;
 }
 h1, h2, h3, h4, .name {
-    font-family: "Open Sans", "Cronos Pro", "Calibri", "Gill Sans", "TW Cen MT", sans-serif;
+    font-family: "Calibri", "Gill Sans", "TW Cen MT", sans-serif;
     /*color: #803530; */
     /*color: #804113; font-weight: bold*/
     /* color: #604113; font-weight: bold */
@@ -109,7 +117,6 @@ a.website, a:link i, a:visited i, i a:link, i a:visited {
     color: #347
 }
 
-body {font-size: 100%; width: 100%}
 div.narrow {max-width:100ex; margin: 0 auto; padding: 1ex}
 div.paperlist {max-width:80ex; padding: 1ex}
 div.fit {max-width: 100%}
