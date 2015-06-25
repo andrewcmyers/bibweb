@@ -251,6 +251,26 @@ public class Main {
 			return "";
 		return expand(s, false);
 	}
+	
+	String normalizeAuthor(String a) {
+		if (a.contains(", ")) {
+			StringBuilder b = new StringBuilder();
+			Scanner s = new Scanner(a);
+			s.useDelimiter(", ");
+			String surname = s.next();
+			String firstname = s.next();
+			b.append(firstname);
+			b.append(" ");
+			b.append(surname);
+			if (s.hasNext()) {
+				String jr = s.next();
+				b.append(", "); b.append(jr);
+			}
+			s.close();
+			return b.toString();
+		}
+		return a;
+	}
 
 	private String formattedAuthors(Publication p) {
 		String[] authors = p.authors();
@@ -259,12 +279,12 @@ public class Main {
 		case 0:
 			break;
 		case 1:
-			w.append(expand(authors[0], false));
+			w.append(expand(normalizeAuthor(authors[0]), false));
 			break;
 		case 2:
-			w.append(expand(authors[0], false));
+			w.append(expand(normalizeAuthor(authors[0]), false));
 			w.append(" and ");
-			w.append(expand(authors[1], false));
+			w.append(expand(normalizeAuthor(authors[1]), false));
 			break;
 		default:
 			for (int j = 0; j < authors.length; j++) {
@@ -272,7 +292,7 @@ public class Main {
 					w.append(", ");
 				if (j == authors.length - 1)
 					w.append("and ");
-				w.append(expand(authors[j], false));
+				w.append(expand(normalizeAuthor(authors[j]), false));
 			}
 			break;
 		}
@@ -455,6 +475,7 @@ public class Main {
 	static String crlf = "\r\n";
 
 	String generateTitle(Publication p) {
+		assert p != null;
 		String url = p.url();
 		StringBuilder b = new StringBuilder();
 		b.append("<span class=\"papertitle\">");
@@ -464,7 +485,8 @@ public class Main {
 			b.append(url);
 			b.append("\">");
 		}
-		b.append(expand(p.title(), true));
+		if (p.title() != null)
+		  b.append(expand(p.title(), true));
 		if (url != null)
 			b.append("</a>");
 		b.append("</span>");
@@ -532,6 +554,14 @@ public class Main {
 			b.append(", ");
 			b.append(p.institution());
 			break;
+		case "phdthesis":
+			b.append("Ph.D. dissertation, ");
+			b.append(p.school());
+			break;
+		case "mastersthesis":
+			b.append("Master's thesis, ");
+			b.append(p.school());
+			break;
 		default:
 			b.append("<strong>(Unhandled publication type " + p.pubType()
 					+ ")</strong>");
@@ -548,7 +578,7 @@ public class Main {
 	}
 	
 	Namespace getPubCtxt(Publication p) {
-		System.out.println("looking up pub " + p);
+		//System.out.println("looking up pub " + p);
 		if (pub_defns.containsKey(p)) {
 			assert pub_defns.get(p) != null;
 			return pub_defns.get(p);
@@ -563,12 +593,17 @@ public class Main {
 		ctxt.add("bibtexTitle", p.title());
 		ctxt.add("wherepublished", where_published);
 		ctxt.add("authors", authors);
-		ctxt.add("bibtexAuthors", p.author());
+		if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
 		ctxt.add("pubtype", p.pubType());
 		if (p.url() != null) ctxt.add("paperurl", p.url());
 		ctxt.add("venue", p.venue());
 		ctxt.add("key", p.key);
 		ctxt.add("year", p.bibtexYear());
+		if (p.institution() != null) ctxt.add("institution", p.institution());
+		if (p.volume() != null) ctxt.add("volume", p.volume());
+		if (p.number() != null) ctxt.add("number", p.number());
+		
+		if (p.url() != null) ctxt.add("url", p.url());
 
 		if (p.bibtexMonth() != null)
 			ctxt.add("month", p.bibtexMonth());

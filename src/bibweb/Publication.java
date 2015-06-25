@@ -114,6 +114,7 @@ public class Publication {
 	String[] authors() {
 		ArrayList<String> auths = new ArrayList<String>();
 		String a = author();
+		if (a == null) return new String[0];
 		Scanner sc = new Scanner(a);
 		sc.useDelimiter("(\\s)(\\s)*and(\\s)(\\s)*");
 		while (sc.hasNext()) {
@@ -155,6 +156,10 @@ public class Publication {
 
 	public String institution() {
 		return field("institution", BibTeXEntry.KEY_INSTITUTION);
+	}
+
+	public String school() {
+		return field("school", BibTeXEntry.KEY_SCHOOL);
 	}
 
 

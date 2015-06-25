@@ -142,6 +142,7 @@ public class Tex2HTML {
 				case '-':
 				case '&':
 				case '#':
+				case '~':
 					ret.append(c);
 					state = State.Normal;
 					break;
@@ -277,7 +278,6 @@ public class Tex2HTML {
 
 			String key = convert(args.get(0), false);
 			String field = convert(args.get(1), false);
-			System.out.println("looking up pubinfo on " + key + "," + field);
 			try { inp.push(pub_info.lookup(key, field)); } catch (LookupFailure e) {}
 			break;
 		default:
@@ -309,7 +309,8 @@ public class Tex2HTML {
 		}
 
 		try {
-			return context.lookup(macro_name + macro_argument);
+			if (macro_argument.size() > 0)
+				return context.lookup(macro_name + macro_argument.get(0));
 		} catch (LookupFailure e) {
 		}
 
