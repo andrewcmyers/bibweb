@@ -20,7 +20,7 @@ public class BuiltinMacros {
 			"\\doctype\r\n" +
 			"<html>\r\n" +
 			"<head>\r\n" +
-			"  <title>\\title</title>\r\n" +
+			"  <title>\\pagetitle</title>\r\n" +
 			"  \\urimeta\r\n" +
 			"  \\contenttype\r\n" + 
 			"  \\moremeta\r\n" +
@@ -36,7 +36,7 @@ public class BuiltinMacros {
 			"</html>" },
 		{ "doctype",     "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\""
 				       + " \"http://www.w3.org/TR/html4/loose.dtd\">"},
-	    { "title",       "Publications by \\author" },
+	    { "pagetitle",       "Publications by \\author" },
 	    { "contenttype", "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"},
 		{ "moremeta",    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" },
 		{ "style",       "  <link href=\"\\stylesheet\" type=\"text/css\" rel=\"stylesheet\" />" },
@@ -53,10 +53,10 @@ public class BuiltinMacros {
 		{ "openpaperlist", "<ul class=pubs>" },
 		{ "closepaperlist", "</ul>" },
 		{ "pubformat",
-			"\\authors. \\pubtitle.\r\n"
+			"\\authors. \\title.\r\n"
 	      + "\\wherepublished.\r\n" },
 	    { "\\authors", "(formatted author list)" },
-	    { "\\pubtitle", "(title of this publication)" },
+	    { "\\title", "(title of this publication)" },
 	    { "\\wherepublished", "(publication venue and pages)" },
 	    { "\\year", "(year of this publication)" },
 	    // ifdef

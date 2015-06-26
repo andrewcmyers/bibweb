@@ -71,7 +71,7 @@ public class Publication {
 	}
 
 	String title() {
-		return field("pubtitle", BibTeXEntry.KEY_TITLE);
+		return field("title", BibTeXEntry.KEY_TITLE);
 	}
 
 	String author() {

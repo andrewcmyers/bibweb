@@ -95,11 +95,15 @@ public class Main {
 		System.out.println("  ..select: <selectors>     % choose publications for current section");
 		System.out.println("  ...pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'");
 		System.out.println("  ...topic: <type>          % choose pubs by topic");
+		System.out.println("  .                         % end a multiline command");
+		System.out.println("  ..                        % end a multiline subcommand (etc.)");
 		
-		System.out.println("\r\nMultiline commands and definitions are ended with a single .\n");
+		System.out.println("\r\nMultiline commands and definitions are ended with a single period.");
+		System.out.println("Initial periods are ignored in command lines.");
 		
 
 	}
+	
 	void dumpDefns() {
 		System.out.println("Default definitions:\r\n");
 		for (int i = 0; i < BuiltinMacros.macros.length; i++) {
@@ -486,25 +490,6 @@ public class Main {
 
 	static String crlf = "\r\n";
 
-	String generateTitle(Publication p) {
-		assert p != null;
-		String url = p.url();
-		StringBuilder b = new StringBuilder();
-		b.append("<span class=\"papertitle\">");
-		b.append(crlf);
-		if (url != null) {
-			b.append("<a href=\"");
-			b.append(url);
-			b.append("\">");
-		}
-		if (p.title() != null)
-		  b.append(expand(p.title(), true));
-		if (url != null)
-			b.append("</a>");
-		b.append("</span>");
-		return b.toString();
-	}
-
 	String wherePublished(Publication p) {
 		StringBuilder b = new StringBuilder();
 		switch (p.pubType()) {
@@ -599,13 +584,11 @@ public class Main {
 			return pub_defns.get(p);
 		}
 
-		String title = generateTitle(p);
 		String where_published = wherePublished(p);
 		String authors = formattedAuthors(p);
 		
 		Context ctxt = new Context();
-		ctxt.add("pubtitle", title);
-		ctxt.add("bibtexTitle", p.title());
+		ctxt.add("title", p.title());
 		ctxt.add("wherepublished", where_published);
 		ctxt.add("authors", authors);
 		if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
@@ -618,8 +601,6 @@ public class Main {
 		if (p.volume() != null) ctxt.add("volume", p.volume());
 		if (p.number() != null) ctxt.add("number", p.number());
 		
-		if (p.url() != null) ctxt.add("url", p.url());
-
 		if (p.bibtexMonth() != null)
 			ctxt.add("month", p.bibtexMonth());
 		if (p.pages() != null)
