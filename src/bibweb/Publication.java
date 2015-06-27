@@ -2,7 +2,6 @@ package bibweb;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-//import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -14,22 +13,22 @@ import org.jbibtex.Value;
 
 import bibweb.Parsing.ParseError;
 
-// parsed from file
+// A publication. Typically parsed from the input file and overlaid with information
+// from the script.
 public class Publication {
-	String key;
-	Key bibkey;
-	ArrayList<String> topics;
-	Map<String, String> defns = new HashMap<>();
-	Namespace bindings;
-	BibTeXDatabase db;
+	protected String key;
+	protected Key bibkey;
+	protected ArrayList<String> topics;
+	protected Map<String, String> defns = new HashMap<>();
+	protected Namespace bindings;
+	protected BibTeXDatabase db;
 
-	Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
+	private Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
 
 	Publication(String k, LNScanner sc, BibTeXDatabase db) throws ParseError {
 		this.db = db;
 		key = k;
 		bibkey = new Key(k);
-		//System.out.println("Created pub " + k);
 		topics = new ArrayList<String>();
 		while (sc.hasNextLine()) {
 			Parsing.AttrValue av = Parsing.parseAttribute(sc);
@@ -39,10 +38,8 @@ public class Publication {
 				try {
 					while (tops.hasNext(id_pat)) {
 						String t = tops.next(id_pat);
-						//System.out.print(" " + t);
 						topics.add(t);
 					}
-					//System.out.println();
 				} finally {
 					tops.close();
 				}
@@ -57,7 +54,6 @@ public class Publication {
 		return key;
 	}
 	
-
 	BibTeXEntry entry() {
 		return db.getEntries().get(bibkey);
 	}
@@ -89,7 +85,7 @@ public class Publication {
 		if (pp == null)
 			return null;
 		return pp.replaceAll("--", "&ndash;"); // this should be handled by
-												// Latex2html
+											   // TeX2HTML
 	}
 
 	static Key KEY_venueURL = new Key("venueurl");
@@ -107,9 +103,12 @@ public class Publication {
 
 	String venue() {
 		switch (pubType()) {
-		case "inproceedings": return field("booktitle", BibTeXEntry.KEY_BOOKTITLE);
-		case "article": return field("journal", BibTeXEntry.KEY_JOURNAL); 
-		default: return "(unknown venue)";
+		case "inproceedings":
+			return field("booktitle", BibTeXEntry.KEY_BOOKTITLE);
+		case "article":
+			return field("journal", BibTeXEntry.KEY_JOURNAL);
+		default:
+			return "(unknown venue)";
 		}
 	}
 
@@ -131,7 +130,7 @@ public class Publication {
 	}
 	int year() {
 		try {
-		return Integer.parseInt(bibtexYear());
+			return Integer.parseInt(bibtexYear());
 		} catch (NumberFormatException e) {
 			System.err.println("Bad year in publication " + key);
 			return 0;
@@ -163,6 +162,4 @@ public class Publication {
 	public String school() {
 		return field("school", BibTeXEntry.KEY_SCHOOL);
 	}
-
-
 }

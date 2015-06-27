@@ -60,7 +60,7 @@ public class StringInput implements Input {
 	}
 
 	@Override
-	public char lookahead() throws NoSuchElementException {
+	public char peek() throws NoSuchElementException {
 		if (first == null)
 			throw empty;
 		return first.data.charAt(first.cur);

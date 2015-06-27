@@ -91,9 +91,9 @@ public class Tex2HTML {
 					state = State.Normal;
 					break;
 				case '-':
-					if (inp.lookahead() == '-') {
+					if (inp.peek() == '-') {
 						inp.next();
-						if (inp.lookahead() == '-') {
+						if (inp.peek() == '-') {
 							inp.next();
 							ret.append("&mdash;");
 						} else {
@@ -109,7 +109,7 @@ public class Tex2HTML {
 					state = State.Normal;
 					break;
 				case '\r':
-					if (inp.lookahead() == '\n') {
+					if (inp.peek() == '\n') {
 						ret.append("\r\n");
 						state = State.Whitespace;
 					}

@@ -5,11 +5,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** A namespace that supports pushing and popping other namespaces.
+ *  The current namespace can be either immutable or mutable. The initial
+ *  state is a single-level mutable namespace to which new bindings can be
+ *  added.
+ */
 public class Context implements Namespace {
+	
 	interface Node {
 		String get(String name) throws LookupFailure;
 		void put(String name, String value);
 	}
+	
 	static class FixedNode implements Node {
 		Namespace fixed_mappings; // may be null
 
@@ -27,15 +34,15 @@ public class Context implements Namespace {
 			throw new UnsupportedOperationException();
 		}
 	}
+	
 	static class MutableNode implements Node {
 		Map<String, String> mappings = new HashMap<>();
 
 		@Override
 		public String get(String name) throws LookupFailure {
-			if (mappings.containsKey(name))
-				return mappings.get(name);
-			else
+			if (!mappings.containsKey(name))
 				throw lookupFailed;
+			return mappings.get(name);
 		}
 
 		@Override
@@ -44,7 +51,7 @@ public class Context implements Namespace {
 		}
 	}
 
-	List<Node> nodes;
+	private List<Node> nodes;
 	{
 		nodes = new ArrayList<Node>();
 		nodes.add(new MutableNode());
@@ -67,6 +74,7 @@ public class Context implements Namespace {
 	public void push() {
 		nodes.add(new MutableNode());
 	}
+	
 	public void push(Namespace n) {
 		nodes.add(new FixedNode(n));
 	}
