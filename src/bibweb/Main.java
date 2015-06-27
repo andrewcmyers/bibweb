@@ -364,6 +364,7 @@ public class Main {
 		String fname = null;
 		PrintWriter w = null;
 		boolean sections = false;
+		boolean header = false;
 		try {
 			while (gsc.hasNextLine()) {
 				Parsing.AttrValue av = Parsing.parseAttribute(gsc);
@@ -383,11 +384,18 @@ public class Main {
 						System.err.println("Cannot write to " + fname);
 						return;
 					}
-					generateHeader(w);
-					w.flush();
+
 					break;
 				case "section":
 					sections = true;
+					if (w == null) {
+						System.err.println("No output defined. Use 'output' subcommand first.");
+						return;
+					}
+					if (!header) {
+						generateHeader(w);
+						header = true;
+					}
 					Scanner ssc = new Scanner(av.value);
 					try {
 						generateSection(w, ssc);
