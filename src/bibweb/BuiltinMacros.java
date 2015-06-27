@@ -53,8 +53,8 @@ public class BuiltinMacros {
 		{ "openpaperlist", "<ul class=pubs>" },
 		{ "closepaperlist", "</ul>" },
 		{ "pubformat",
-			"\\authors. \\title.\r\n"
-	      + "\\wherepublished.\r\n" },
+			"<li>\r\n\\authors. \\title.\r\n"
+	      + "\\wherepublished.</li>\r\n" },
 	    { "\\authors", "(formatted author list)" },
 	    { "\\title", "(title of this publication)" },
 	    { "\\wherepublished", "(publication venue and pages)" },

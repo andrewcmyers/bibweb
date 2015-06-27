@@ -429,7 +429,6 @@ public class Main {
 				switch (av.attribute) {
 				case "select":
 					any_select = true;
-					Filter filter = new AllFilter();
 					Scanner sssc = new Scanner(av.value);
 					List<Filter> filters = new ArrayList<Filter>();
 					try {
@@ -464,9 +463,7 @@ public class Main {
 			w.println(expand("\\intro"));
 			w.println(expand("\\openpaperlist"));
 			for (Publication p : pa) {
-				w.println("<li>");
 				generatePub(p, w);
-				w.println("</li>");
 			}
 			w.println(expand("\\closepaperlist"));
 			w.flush();
