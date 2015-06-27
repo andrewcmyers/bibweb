@@ -565,7 +565,8 @@ public class Main {
 		String authors = formattedAuthors(p);
 		
 		Context ctxt = new Context();
-		ctxt.add("title", p.title());
+		if (p.title() != null) ctxt.add("title", p.title());
+		else ctxt.add("title", "<em>No title</em>");
 		ctxt.add("wherepublished", where_published);
 		ctxt.add("authors", authors);
 		if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
