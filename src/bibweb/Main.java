@@ -13,53 +13,48 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.regex.Pattern;
-
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.BibTeXParser;
 import org.jbibtex.Key;
-import org.jbibtex.ObjectResolutionException;
 import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
+import bibweb.Parsing.ParseError;
 import bibweb.PubInfoImpl.GetPubCtxt;
 
 public class Main {
-	String[] args;
-	String inputFile;
-	BibTeXDatabase db;
-	HashMap<String, Publication> pubs;
+	protected String[] args;
+	protected String inputFile;
+	protected BibTeXDatabase db;
+	protected HashMap<String, Publication> pubs;
 	/** Records the generated namespace for each publication. */
 	Map<Publication, Namespace> pub_defns = new HashMap<>();
 
-	String bibFile;
-	boolean generated = false;
-	Tex2HTML t2h;
+	protected String bibFile;
+	protected boolean generated = false;
+	protected Tex2HTML t2h;
 
 	public static String[] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
 			"November", "December" };
 	HashMap<String, Integer> months = new HashMap<>();
 	{
-		for (int i = 0; i < 12; i++) {
+		for (int i = 0; i < 12; i++)
 			months.put(month_names[i], i);
-		}
 	}
 
-	Main(String[] args) {
+	protected Main(String[] args) {
 		this.args = args;
 		pubs = new HashMap<String, Publication>();
-		t2h = new Tex2HTML(new PubInfoImpl(pubs, new GetPubCtxt() {
-			public Namespace get(Publication p) {
-				return getPubCtxt(p);
-			}
-		}));
+		PubInfo pub_access = new PubInfoImpl(pubs, new GetPubCtxt() {
+			public Namespace get(Publication p) { return getPubCtxt(p); }
+		});
+		t2h = new Tex2HTML(pub_access);
 	}
 
-	public static void usage() {
+	protected static void usage() {
 		System.err.println("Usage: bibweb [--help | --defns | <script-file> ]");
 	}
 
@@ -67,7 +62,7 @@ public class Main {
 		Main me = new Main(args);
 		me.run();
 	}
-	public void parseArgs() {
+	protected void parseArgs() {
 		if (args.length != 1) {
 			usage();
 			System.exit(1);
@@ -83,7 +78,7 @@ public class Main {
 			inputFile = args[0];
 		}
 	}
-	public void help() {
+	protected void help() {
 		usage();
 		System.out.println("\nScript commands:\r\n");
 		System.out.println("  bibfile: <bibfile.bib>    % read a bibliography file");
@@ -104,7 +99,7 @@ public class Main {
 
 	}
 	
-	void dumpDefns() {
+	protected void dumpDefns() {
 		System.out.println("Default definitions:\r\n");
 		for (int i = 0; i < BuiltinMacros.macros.length; i++) {
 			System.out.print(BuiltinMacros.macros[i][0]);
@@ -119,92 +114,83 @@ public class Main {
 		}
 	}
 	
-	void addEnvMacros() {
+	protected void addEnvMacros() {
 		t2h.addMacro("HOME", System.getenv("HOME"));
 		t2h.addMacro("USER", System.getenv("USER"));
 		t2h.addMacro("DATE", new Date().toString());
 	}
 
-	void run() {
+	protected void run() {
 		parseArgs();
 		addEnvMacros();
 
 		try {
-			Scanner sc = new Scanner(new FileReader(inputFile));
+			LNScanner sc = new LNScanner(new FileReader(inputFile));
 			try {
 				runScript(sc);
 			} finally {
 				sc.close();
 			}
-		} catch (FileNotFoundException e1) {
-			System.err.println("File not found: " + e1);
-		} catch (TokenMgrException e) {
-			System.err.println("Token manager exception: " + e);
-		} catch (ParseException e) {
-			System.err.println("Parse exception: " + e);
-		} catch (ObjectResolutionException e) {
-			System.err.println("Cannot find object named \"" + e.getMessage()
-					+ "\", missing a @string defn?");
-		} catch (IOException e) {
-			System.err.println("IO Exception:");
-			System.err.println("" + e);
+		} catch (FileNotFoundException e) {
+			System.err.println("File not found: " + inputFile);
 		}
 	}
 
-	Pattern colon = Pattern.compile("\\s*:\\s*");
-
-	private void runScript(Scanner sc) throws IOException, TokenMgrException,
-			ParseException {
+	protected void runScript(LNScanner sc) {
 		while (sc.hasNextLine()) {
-			lineno++;
+			int lineno = sc.lineNo();
+			Parsing.AttrValue av;
 			try {
-				Parsing.AttrValue av = Parsing.parseAttribute(sc);
-				runScriptLine(av.attribute, av.value);
-			} catch (NoSuchElementException e) {
-				System.err.println("No attribute value at line " + lineno);
+				av = Parsing.parseAttribute(sc);
+			} catch (ParseError e) {
+				System.err.println("Parse error: " + e.getMessage());
+				continue;
 			}
+			runScriptLine(av.attribute, av.value, lineno);
+
 		}
 		if (!generated) {
 			System.out
 					.println("No 'generate' command found, nothing generated.");
 		}
-	} // runScript
-	
-	int lineno;
+	}
 
-	private void readPublications(Scanner sc) throws FileNotFoundException,
-			IOException {
-
+	protected void readPublications(LNScanner sc) throws Parsing.ParseError {
 		while (sc.hasNextLine()) {
-			lineno++;
-
 			Parsing.AttrValue av = Parsing.parseAttribute(sc);
-			Scanner pubsc = new Scanner(av.value);
+			LNScanner pubsc = new LNScanner(av.value, sc.lineNo());
 			try {
 				Publication p = new Publication(av.attribute, pubsc, db);
 				pubs.put(p.key, p);
-				// System.out.println("installing " + p.key);
 			} finally {
 				pubsc.close();
 			}
 		}
 	}
 
-	Pattern whitespace = Pattern.compile("[ \t\r\n][ \t\r\n]*");
-
 	/**
-	 * execute a line of the script with form attribute: value, where
+	 * execute a line of the script with form 'attribute: value', where
 	 * 'attribute' may be a command or an attribute to be defined.
 	 */
-	void runScriptLine(String attribute, String value)
-			throws TokenMgrException, ParseException,
-			ObjectResolutionException, IOException {
-
+	protected void runScriptLine(String attribute, String value, int lineno) {
 		switch (attribute) {
 		case "bibfile":
 			bibFile = value;
-			BibTeXParser parser = new BibTeXParser();
-			db = parser.parseFully(new FileReader(expand(bibFile)));
+			BibTeXParser parser;
+			try {
+				parser = new BibTeXParser();
+			} catch (TokenMgrException e) {
+				System.err.println("Failed reading bib file at line " + lineno + ": " + e.getMessage());
+				return;
+			} catch (ParseException e) {
+				System.err.println("Failed reading bib file at line " + lineno + ": " + e.getMessage());
+				return;
+			}
+			try {
+				db = parser.parseFully(new FileReader(expand(bibFile)));
+			} catch (IOException e) {
+				System.err.println("IO exception parsing bib file at " + lineno);
+			}
 			System.out.println("Found " + db.getObjects().size()
 					+ " objects in BibTeX file.");
 			break;
@@ -215,17 +201,18 @@ public class Main {
 				return;
 			}
 			try {
-				readPublications(new Scanner(value));
+				readPublications(new LNScanner(value, lineno));
+
 				System.out.println("Found " + pubs.size()
 						+ " publications in script.");
-			} catch (NoSuchElementException e) {
+			} catch (ParseError e) {
 				System.out.println("No publications in script at line "
-						+ lineno);
+						+ lineno + ": " + e.getMessage());
 			}
 			break;
 		case "generate":
 			generated = true;
-			Scanner gsc = new Scanner(value);
+			LNScanner gsc = new LNScanner(value, lineno);
 			try {
 				generate(gsc);
 			} finally {
@@ -237,15 +224,15 @@ public class Main {
 		}
 	}
 
-	private void generateHeader(PrintWriter w) {
+	protected void generateHeader(PrintWriter w) {
 		w.print(expand("\\header"));
 	}
 
-	private void generateFooter(PrintWriter w) {
+	protected void generateFooter(PrintWriter w) {
 		w.print(expand("\\footer"));
 	}
 
-	String expand(String s, boolean b) {
+	protected String expand(String s, boolean b) {
 		try {
 			return t2h.convert(s, b);
 		} catch (T2HErr e) {
@@ -253,13 +240,13 @@ public class Main {
 		}
 	}
 
-	String expand(String s) {
+	protected String expand(String s) {
 		if (s == null)
 			return "";
 		return expand(s, false);
 	}
 	
-	String normalizeAuthor(String a) {
+	protected String normalizeAuthor(String a) {
 		if (a.contains(", ")) {
 			StringBuilder b = new StringBuilder();
 			Scanner s = new Scanner(a);
@@ -279,7 +266,7 @@ public class Main {
 		return a;
 	}
 
-	private String formattedAuthors(Publication p) {
+	protected String formattedAuthors(Publication p) {
 		String[] authors = p.authors();
 		StringBuilder w = new StringBuilder();
 		switch (authors.length) {
@@ -306,23 +293,17 @@ public class Main {
 		return w.toString();
 	}
 
-	static interface Filter {
+	protected static interface Filter {
 		boolean select(Publication p);
 	}
 
-	class AllFilter implements Filter {
+	protected static class AllFilter implements Filter {
 		public boolean select(Publication p) {
 			return true;
 		}
 	}
 
-	class NoneFilter implements Filter {
-		public boolean select(Publication p) {
-			return false;
-		}
-	}
-
-	Filter createFilter(final Parsing.AttrValue selector) {
+	protected Filter createFilter(final Parsing.AttrValue selector) {
 		switch (selector.attribute) {
 		case "pubtype":
 			return new Filter() {
@@ -348,7 +329,7 @@ public class Main {
 			};
 		case "all":
 			return new AllFilter();
-		default:
+		default: // general selection on an attribute
 			return new Filter() {
 				public boolean select(Publication p) {
 					String v = p.field(selector.attribute, new Key(selector.attribute));
@@ -358,7 +339,7 @@ public class Main {
 		}
 	}
 
-	private void generate(Scanner gsc) {
+	protected void generate(LNScanner gsc) {
 		t2h.push();
 
 		String fname = null;
@@ -367,6 +348,7 @@ public class Main {
 		boolean header = false;
 		try {
 			while (gsc.hasNextLine()) {
+				int lineno = gsc.lineNo();
 				Parsing.AttrValue av = Parsing.parseAttribute(gsc);
 				switch (av.attribute) {
 				case "output":
@@ -384,7 +366,6 @@ public class Main {
 						System.err.println("Cannot write to " + fname);
 						return;
 					}
-
 					break;
 				case "section":
 					sections = true;
@@ -396,7 +377,7 @@ public class Main {
 						generateHeader(w);
 						header = true;
 					}
-					Scanner ssc = new Scanner(av.value);
+					LNScanner ssc = new LNScanner(av.value, lineno);
 					try {
 						generateSection(w, ssc);
 					} finally {
@@ -413,7 +394,10 @@ public class Main {
 						.println("No output file specified in 'generate', no output generated.");
 			}
 
-		} finally {
+		} catch (ParseError e) {
+			System.err.println("Parse error: " + e.getMessage());
+		}
+		finally {
 			if (sections == false) {
 				System.out
 						.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
@@ -423,21 +407,21 @@ public class Main {
 			if (w != null)
 				w.close();
 		}
-
 	}
 
-	private void generateSection(PrintWriter w, Scanner ssc) {
+	protected void generateSection(PrintWriter w, LNScanner ssc) throws ParseError {
 		Collection<Publication> selected = new HashSet<>();
-		// System.out.println("Starting new section");
 		t2h.push();
 		boolean any_select = false;
+		
 		try {
 			while (ssc.hasNextLine()) {
+				int ln = ssc.lineNo();
 				Parsing.AttrValue av = Parsing.parseAttribute(ssc);
 				switch (av.attribute) {
 				case "select":
 					any_select = true;
-					Scanner sssc = new Scanner(av.value);
+					LNScanner sssc = new LNScanner(av.value, ln);
 					List<Filter> filters = new ArrayList<Filter>();
 					try {
 						while (sssc.hasNextLine()) {
@@ -464,15 +448,12 @@ public class Main {
 				selected = pubs.values();
 			
 			Publication[] pa = selected.toArray(new Publication[0]);
-			// System.out.println("Selected " + pa.length
-			// + " publications for this section.");
 			Arrays.sort(pa, byYear);
 
 			w.println(expand("\\intro"));
 			w.println(expand("\\openpaperlist"));
-			for (Publication p : pa) {
+			for (Publication p : pa)
 				generatePub(p, w);
-			}
 			w.println(expand("\\closepaperlist"));
 			w.flush();
 		} finally {
@@ -480,22 +461,14 @@ public class Main {
 		}
 	}
 
-	Comparator<Publication> byYear = new Comparator<Publication>() {
+	protected Comparator<Publication> byYear = new Comparator<Publication>() {
 		@Override
 		public int compare(Publication o1, Publication o2) {
 			return (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
 		}
 	};
-	Comparator<Publication> byType = new Comparator<Publication>() {
-		@Override
-		public int compare(Publication o1, Publication o2) {
-			return o1.pubType().compareTo(o2.pubType());
-		}
-	};
 
-	static String crlf = "\r\n";
-
-	String wherePublished(Publication p) {
+	protected String wherePublished(Publication p) {
 		StringBuilder b = new StringBuilder();
 		switch (p.pubType()) {
 		case "inproceedings":
@@ -509,7 +482,6 @@ public class Main {
 			b.append(expand(s));
 			if (p.venueURL() != null)
 				b.append("</a>");
-
 			b.append("</span>");
 
 			String pp = p.pages();
@@ -568,7 +540,8 @@ public class Main {
 			b.append(p.field("howpublished", BibTeXEntry.KEY_HOWPUBLISHED));
 			break;
 		default:
-			b.append("<strong>(Unhandled publication type " + p.pubType()
+			b.append("<strong>(Unhandled publication type "
+					+ p.pubType()
 					+ ")</strong>");
 		}
 		b.append(",\r\n");
@@ -582,8 +555,7 @@ public class Main {
 		return b.toString();
 	}
 	
-	Namespace getPubCtxt(Publication p) {
-		//System.out.println("looking up pub " + p);
+	protected Namespace getPubCtxt(Publication p) {
 		if (pub_defns.containsKey(p)) {
 			assert pub_defns.get(p) != null;
 			return pub_defns.get(p);
@@ -617,7 +589,7 @@ public class Main {
 		return ctxt;
 	}
 
-	void generatePub(Publication p, PrintWriter w) {
+	protected void generatePub(Publication p, PrintWriter w) {
 		t2h.push(getPubCtxt(p));
 		try {
 			w.println(expand("\\pubformat"));

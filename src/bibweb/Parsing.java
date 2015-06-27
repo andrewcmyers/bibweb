@@ -7,8 +7,9 @@ import java.util.regex.Pattern;
 public class Parsing {
 	int lineno;
 	
-	public static String readMultiline(Scanner sc) {
+	public static String readMultiline(LNScanner sc) {
 		StringBuilder b = new StringBuilder();
+
 		while (sc.hasNextLine()) {
 			String s = sc.nextLine();
 			if (s.length() > 0 && s.charAt(0) == '%') continue;
@@ -24,24 +25,39 @@ public class Parsing {
 	
 	static Pattern colon = Pattern.compile("\\s*:\\s*");
 
-	public static String readValue(String attribute, Scanner sc, Scanner lsc) {
-		lsc.skip(colon);
-		return lsc.hasNextLine() ? lsc.nextLine() : readMultiline(sc);
+	public static String readValue(String attribute, LNScanner sc, Scanner lsc)
+			throws ParseError {
+		try {
+			lsc.skip(colon);
+			return lsc.hasNextLine() ? lsc.nextLine() : readMultiline(sc);
+		} catch (NoSuchElementException e) {
+			throw new ParseError("No attribute value found at line " + sc.lineNo());
+		}
 	}
 	
-	public static AttrValue parseAttribute(Scanner sc) throws NoSuchElementException {
+	public static class ParseError extends Exception {
+		public ParseError(String msg) {
+			super(msg);
+		}
+
+		private static final long serialVersionUID = 1L;}
+	
+	public static AttrValue parseAttribute(LNScanner sc) throws ParseError {
 		String line;
 		do {
 			line = sc.nextLine();
-			if (line.equals("end")) throw none;
 		} while (line.length() == 0 || line.charAt(0) == '%');
 
 		Scanner lsc = new Scanner(line);
 		try {
 			lsc.useDelimiter(colon);
-			String attribute = lsc.next();
+			String attribute;
+			try {
+				attribute = lsc.next();
+			} catch (NoSuchElementException e) {
+				throw new ParseError("No attribute found at line " + sc.lineNo());
+			}
 			attribute = attribute.trim();
-			// System.out.println("attribute = " + attribute);
 			String value = Parsing.readValue(attribute, sc, lsc);
 			return new AttrValue(attribute, value);
 		} finally {
@@ -57,7 +73,6 @@ public class Parsing {
 		public AttrValue(String a, String v) {
 			attribute = a;
 			value = v;
-//			System.out.println("Created attribute " + a + " = " + v);
 		}
 	}
 }

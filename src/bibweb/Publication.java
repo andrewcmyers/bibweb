@@ -12,6 +12,8 @@ import org.jbibtex.BibTeXEntry;
 import org.jbibtex.Key;
 import org.jbibtex.Value;
 
+import bibweb.Parsing.ParseError;
+
 // parsed from file
 public class Publication {
 	String key;
@@ -23,7 +25,7 @@ public class Publication {
 
 	Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
 
-	Publication(String k, Scanner sc, BibTeXDatabase db) {
+	Publication(String k, LNScanner sc, BibTeXDatabase db) throws ParseError {
 		this.db = db;
 		key = k;
 		bibkey = new Key(k);
