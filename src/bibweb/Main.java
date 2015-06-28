@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.BibTeXParser;
@@ -22,7 +23,8 @@ import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
 import bibweb.Parsing.ParseError;
-import bibweb.PubInfoImpl.GetPubCtxt;
+import bibweb.PubInfo.GetPubCtxt;
+import bibweb.Tex2HTML.T2HErr;
 
 public class Main {
 	protected String[] args;
@@ -48,7 +50,7 @@ public class Main {
 	protected Main(String[] args) {
 		this.args = args;
 		pubs = new HashMap<String, Publication>();
-		PubInfo pub_access = new PubInfoImpl(pubs, new GetPubCtxt() {
+		ExtInfo pub_access = new PubInfo(pubs, new GetPubCtxt() {
 			public Namespace get(Publication p) { return getPubCtxt(p); }
 		});
 		t2h = new Tex2HTML(pub_access);

@@ -1,1 +1,4 @@
-make line numbers more accurate in error messages.
+Make line numbers more accurate in error messages.
+
+Add support for \def to allow overriding definitions locally. However,
+this needs to be tied into brace processing.

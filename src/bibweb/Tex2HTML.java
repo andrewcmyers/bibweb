@@ -9,9 +9,9 @@ import bibweb.Namespace.LookupFailure;
 
 public class Tex2HTML {
 	Context context = new Context();
-	private PubInfo pub_info;
+	private ExtInfo pub_info;
 	
-	Tex2HTML(PubInfo pub_info)
+	Tex2HTML(ExtInfo pub_info)
 	{
 		String[][] builtin_macros = BuiltinMacros.macros;
 		for (int i = 0; i < builtin_macros.length; i++) {
@@ -323,5 +323,12 @@ public class Tex2HTML {
 
 	public void push(Namespace n) {
 		context.push(n);
+	}
+	
+	@SuppressWarnings("serial")
+	public static class T2HErr extends Exception {
+		public T2HErr(String string) {
+			super(string);
+		}
 	}
 }
