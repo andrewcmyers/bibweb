@@ -1,7 +1,8 @@
 #!/bin/sh
-if [ -d bin ]
+root="`dirname $0`"
+if [ -d "$root"/bin ]
 then
-    java -cp bin bibweb.Main $*
+    java -cp "$root"/bin bibweb.Main $*
 else
-    java -cp bibweb.jar bibweb.Main $*
+    java -cp "$root"/bibweb.jar bibweb.Main $*
 fi

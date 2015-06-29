@@ -9,15 +9,15 @@ import bibweb.Namespace.LookupFailure;
 
 public class Tex2HTML {
 	Context context = new Context();
-	private ExtInfo pub_info;
+	private ExtInfo ext_info;
 	
-	Tex2HTML(ExtInfo pub_info)
+	Tex2HTML(ExtInfo ext)
 	{
 		String[][] builtin_macros = BuiltinMacros.macros;
 		for (int i = 0; i < builtin_macros.length; i++) {
 			context.add(builtin_macros[i][0], builtin_macros[i][1]);
 		}
-		this.pub_info = pub_info;
+		this.ext_info = ext;
 	}
 
 	public void push() {
@@ -278,7 +278,7 @@ public class Tex2HTML {
 
 			String key = convert(args.get(0), false);
 			String field = convert(args.get(1), false);
-			try { inp.push(pub_info.lookup(key, field)); } catch (LookupFailure e) {}
+			try { inp.push(ext_info.lookup(key, field)); } catch (LookupFailure e) {}
 			break;
 		default:
 			throw new Error("Internal error: Not a special macro: " + name);
