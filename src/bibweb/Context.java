@@ -87,4 +87,8 @@ public class Context implements Namespace {
 		assert defn != null;
 		nodes.get(nodes.size()-1).put(name,  defn);
 	}
+
+	public int depth() {
+		return nodes.size() - 1;
+	}
 }

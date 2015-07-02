@@ -385,6 +385,7 @@ public class Main {
 					} finally {
 						ssc.close();
 					}
+					break;
 				default:
 					t2h.addMacro(av.attribute, av.value);
 				}

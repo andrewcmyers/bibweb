@@ -61,7 +61,9 @@ public class BuiltinMacros {
 	    { "\\year", "(year of this publication)" },
 	    // ifdef
 	    // ifndef
-	    // true
-	    // false
+	    // pubinfo
+	    // ifeq
+	    // ifne
+	    // def
 	};
 }

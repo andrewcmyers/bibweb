@@ -11,14 +11,25 @@ public class StringInput implements Input {
 		String data;
 		int cur; // invariant: 0 <= cur < data.length
 		StringChunk next; // may be null
+		
+		boolean invariant() {
+			return 0 <= cur && cur < data.length();
+		}
 
 		public String firstn(int n) {
-			String s = data.substring(cur);
-			if (n < s.length())
-				s = s.substring(0, n);
-			else if (next != null)
-				s += next.firstn(n - s.length() - cur);
-			return s;
+			assert invariant();
+			StringBuilder s = new StringBuilder();
+			if (n > 0) {
+				s.append(data.substring(cur));
+				n -= s.length();
+			}
+			StringChunk c = next;
+			while (n > 0 && c != null) {
+				 s.append(c.data.substring(c.cur));
+				 n -= s.length();
+				 c = c.next;
+			}
+			return s.toString();
 		}
 	}
 
@@ -48,6 +59,7 @@ public class StringInput implements Input {
 
 	@Override
 	public char next() throws NoSuchElementException {
+		assert first == null || first.invariant();
 		if (first == null)
 			throw empty;
 		char result = first.data.charAt(first.cur);
@@ -56,6 +68,7 @@ public class StringInput implements Input {
 			first = first.next;
 			depth--;
 		}
+		assert first == null || first.invariant();
 		return result;
 	}
 

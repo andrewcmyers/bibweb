@@ -51,6 +51,8 @@ public class Tex2HTML {
 		special_macros.add("ifeq");
 		special_macros.add("ifne");
 		special_macros.add("pubinfo");
+		special_macros.add("def");
+		special_macros.add("depth");
 	}
 
 	String convert(String s, boolean sentence_case) throws T2HErr {
@@ -60,189 +62,210 @@ public class Tex2HTML {
 		StringBuilder cur_arg = null;
 		StringBuilder ret = new StringBuilder();
 		final char eof = (char) -1;
-		int bracedepth = 0;
+		int bracedepth = 0, macrodepth = 0;
+		try {
+			context.push();
 
-		Input inp = new StringInput(s);
-		char c;
-		while (state != State.EOF) {
-			if (inp.hasNext())
-				c = inp.next();
-			else
-				c = eof;
-			switch (state) {
-			case Normal:
-			case Whitespace:
-			case Start:
-				switch (c) {
-				case eof:
-					state = State.EOF;
-					break;
-				case '\\':
-					state = State.Backslash;
-					break;
-				case '{':
-					bracedepth++;
-					state = State.Normal;
-					break;
-				case '}':
-					if (bracedepth <= 0)
-						throw new T2HErr("More closing braces than opening ones");
-					bracedepth--;
-					state = State.Normal;
-					break;
-				case '-':
-					if (inp.peek() == '-') {
-						inp.next();
+			Input inp = new StringInput(s);
+			char c;
+			while (state != State.EOF) {
+				if (inp.hasNext())
+					c = inp.next();
+				else
+					c = eof;
+				switch (state) {
+				case Normal:
+				case Whitespace:
+				case Start:
+					switch (c) {
+					case eof:
+						state = State.EOF;
+						break;
+					case '\\':
+						state = State.Backslash;
+						break;
+					case '{':
+						bracedepth++;
+//						System.out.println("incrementing brace depth at " + inp);
+						context.push();
+						state = State.Normal;
+						break;
+					case '}':
+						if (bracedepth <= 0)
+							throw new T2HErr(
+									"More closing braces than opening ones: " + inp);
+						bracedepth--;
+//						System.out.println("decrementing brace depth at " + inp);
+						context.pop();
+						state = State.Normal;
+						break;
+					case '-':
 						if (inp.peek() == '-') {
 							inp.next();
-							ret.append("&mdash;");
+							if (inp.peek() == '-') {
+								inp.next();
+								ret.append("&mdash;");
+							} else {
+								ret.append("&ndash;");
+							}
 						} else {
-							ret.append("&ndash;");
+							ret.append("-");
 						}
-					} else {
-						ret.append("-");
-					}
-					state = State.Normal;
-					break;
-				case '~':
-					ret.append("&nbsp;");
-					state = State.Normal;
-					break;
-				case '\r':
-					if (inp.peek() == '\n') {
-						ret.append("\r\n");
-						state = State.Whitespace;
-					}
-				default:
-					if (Character.isAlphabetic(c) && sentence_case && bracedepth == 0 && state != State.Start) {
-						ret.append(Character.toLowerCase(c));
 						state = State.Normal;
-					} else if (Character.isWhitespace(c)
-							&& state != State.Normal) {
-						// consume extra whitespace
-						state = State.Whitespace;
-					} else {
-						ret.append(c);
-						if (Character.isWhitespace(c))
+						break;
+					case '~':
+						ret.append("&nbsp;");
+						state = State.Normal;
+						break;
+					case '\r':
+						if (inp.peek() == '\n') {
+							ret.append("\r\n");
 							state = State.Whitespace;
-						else
+						}
+					default:
+						if (Character.isAlphabetic(c) && sentence_case
+								&& bracedepth == 0 && state != State.Start) {
+							ret.append(Character.toLowerCase(c));
 							state = State.Normal;
+						} else if (Character.isWhitespace(c)
+								&& state != State.Normal) {
+							// consume extra whitespace
+							state = State.Whitespace;
+						} else {
+							ret.append(c);
+							if (Character.isWhitespace(c))
+								state = State.Whitespace;
+							else
+								state = State.Normal;
+						}
 					}
-				}
-				break;
-			case Backslash:
-				switch (c) {
-				case '\\':
-				case eof:
-					ret.append('\\');
-					state = (c == eof) ? State.EOF : State.Normal;
 					break;
-				case '{':
-				case '}':
-				case '-':
-				case '&':
-				case '#':
-				case '~':
-					ret.append(c);
-					state = State.Normal;
-					break;
-				case '\'':
-				case '"':
-					macro_name = new StringBuilder();
-					macro_name.append(c);
-					state = State.ShortMacroArg;
-					break;
-				default:
-					if (Character.isAlphabetic(c)) {
+				case Backslash:
+					switch (c) {
+					case '\\':
+					case eof:
+						ret.append('\\');
+						state = (c == eof) ? State.EOF : State.Normal;
+						break;
+					case '{':
+					case '}':
+					case '-':
+					case '&':
+					case '#':
+					case '~':
+						ret.append(c);
+						state = State.Normal;
+						break;
+					case '\'':
+					case '"':
 						macro_name = new StringBuilder();
 						macro_name.append(c);
-						state = State.AlphMacroName;
+						state = State.ShortMacroArg;
 						break;
-					} else {
-						throw new T2HErr("Unexpected char after backslash: "
-								+ c);
+					default:
+						if (Character.isAlphabetic(c)) {
+							macro_name = new StringBuilder();
+							macro_name.append(c);
+							state = State.AlphMacroName;
+							break;
+						} else {
+							throw new T2HErr(
+									"Unexpected char after backslash: " + c);
+						}
 					}
-				}
-				break;
-			case AlphMacroName:
-				if (Character.isAlphabetic(c)) {
-					macro_name.append(c);
-					// stay in state
-				} else if (c == '{') {
-					state = State.LongMacroArg;
-					macro_args = new ArrayList<>();
-					cur_arg = new StringBuilder();
-					bracedepth = 1;
-				} else {
-					if (c != eof) inp.push(Character.toString(c));
-					String name = macro_name.toString();
-					if (special_macros.contains(name)) {
-						throw new T2HErr("Unexpected character \'" + c + "\': special macro \\" + name + " expects argument in braces");
+					break;
+				case AlphMacroName:
+					if (Character.isAlphabetic(c)) {
+						macro_name.append(c);
+						// stay in state
+					} else if (c == '{') {
+						state = State.LongMacroArg;
+						macro_args = new ArrayList<>();
+						cur_arg = new StringBuilder();
+						
+						macrodepth = bracedepth;
+//						System.out.println("incrementing brace depth in macro (1) at " + inp);
+						bracedepth++;
 					} else {
-						inp.push(expandMacro(name));
+						if (c != eof)
+							inp.push(Character.toString(c));
+						String name = macro_name.toString();
+						if (special_macros.contains(name)) {
+							throw new T2HErr("Unexpected character \'" + c
+									+ "\': special macro \\" + name
+									+ " expects argument in braces");
+						} else {
+							inp.push(expandMacro(name));
+						}
+						state = State.Normal;
 					}
-					state = State.Normal;
-				}
-				break;
-			case LongMacroArg: // in middle of argument held in braces
-				if (c == '{') {
-					cur_arg.append(c);
-					bracedepth++;
-					// state = State.LongMacroArg;
-				} else if (c == '}') {
-					bracedepth--;
-					assert bracedepth >= 0;
-					if (bracedepth == 0) {
-						state = State.FullMacro;
-						macro_args.add(cur_arg.toString());
+					break;
+				case LongMacroArg: // in middle of argument held in braces
+					if (c == '{') {
+						cur_arg.append(c);
+						bracedepth++;
+//						System.out.println("incrementing brace depth in macro at " + inp);
+						// state = State.LongMacroArg;
+					} else if (c == '}') {
+						bracedepth--;
+//						System.out.println("decrementing brace depth in macro at " + inp);
+						assert bracedepth >= macrodepth;
+						if (bracedepth == macrodepth) {
+							state = State.FullMacro;
+							macro_args.add(cur_arg.toString());
+						} else {
+							cur_arg.append(c);
+						}
+						// else stay in state
+					} else if (c == eof) {
+						throw new T2HErr("unexpected end to macro argument.");
 					} else {
 						cur_arg.append(c);
+						// stay in state
 					}
-					// else stay in state
-				} else if (c == eof) {
-					throw new T2HErr("unexpected end to macro argument.");
-				} else {
-					cur_arg.append(c);
-					// stay in state
-				}
-				break;
-			case FullMacro:
-				if (c == '{') {
-					bracedepth++;
-					state = State.LongMacroArg;
-					cur_arg = new StringBuilder();
-				} else {
-					String name = macro_name.toString();
-					inp.push(Character.toString(c));
-					if (special_macros.contains(name)) {
-						handleSpecialMacro(inp, name, macro_args);
+					break;
+				case FullMacro:
+					if (c == '{') {
+						bracedepth++;
+//						System.out.println("Incrementing brace depth at full macro " + inp);
+						state = State.LongMacroArg;
+						cur_arg = new StringBuilder();
 					} else {
-						inp.push(expandMacro(name, macro_args));
+						String name = macro_name.toString();
+						inp.push(Character.toString(c));
+						if (special_macros.contains(name)) {
+							handleSpecialMacro(inp, name, macro_args);
+						} else {
+							inp.push(expandMacro(name, macro_args));
+						}
+						state = State.Normal;
 					}
-					state = State.Normal;
+					break;
+				case ShortMacroArg:
+					if (c == '{') {
+						state = State.LongMacroArg;
+						bracedepth = 1;
+						cur_arg = new StringBuilder();
+					} else if (c == eof) {
+						inp.push(expandMacro(macro_name.toString(),
+								new ArrayList<String>()));
+						state = State.Normal;
+					} else {
+						List<String> args = new ArrayList<String>();
+						args.add(Character.toString(c));
+						cur_arg = new StringBuilder();
+						inp.push(expandMacro(macro_name.toString(), args));
+						state = State.Normal;
+					}
+					break;
+				default:
+					throw new T2HErr("Unexpected state " + state);
 				}
-				break;
-			case ShortMacroArg:
-				if (c == '{') {
-					state = State.LongMacroArg;
-					bracedepth = 1;
-					cur_arg = new StringBuilder();
-				} else if (c == eof) {
-					inp.push(expandMacro(macro_name.toString(), new ArrayList<String>()));
-					state = State.Normal;
-				} else {
-					List<String> args = new ArrayList<String>();
-					args.add(Character.toString(c));
-					cur_arg = new StringBuilder();
-					inp.push(expandMacro(macro_name.toString(), args));
-					state = State.Normal;
-				}
-				break;
-			default:
-				throw new T2HErr("Unexpected state " + state);
 			}
+			return ret.toString();
+		} finally {
+			context.pop();
 		}
-		return ret.toString();
 	}
 
 	boolean inScope(String name) {
@@ -280,13 +303,20 @@ public class Tex2HTML {
 			String field = convert(args.get(1), false);
 			try { inp.push(ext_info.lookup(key, field)); } catch (LookupFailure e) {}
 			break;
+		case "def":
+			if (args.size() != 2) throw new T2HErr("Usage: \\def{macro}{expansion}");
+			context.add(args.get(0), args.get(1));
+			break;
+		case "depth":
+			inp.push("" + context.depth());
+			break;
 		default:
 			throw new Error("Internal error: Not a special macro: " + name);
 		}
 	}
 
 	private String expandMacro(String macro_name) {
-		// System.out.println("expanding macro \\" + macro_name);
+//		System.out.println("expanding macro \\" + macro_name);
 		try {
 			return context.lookup(macro_name);
 		} catch (LookupFailure e) {
@@ -301,6 +331,7 @@ public class Tex2HTML {
 //		 + macro_argument);
 		try {
 			String result = context.lookup(macro_name);
+			// XXX should watch for escaped # here.
 			for (int i = 0; i < macro_argument.size(); i++) {
 				result = result.replaceAll("#" + (i+1), macro_argument.get(i));
 			}
