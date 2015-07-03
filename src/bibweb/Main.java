@@ -1,9 +1,11 @@
 package bibweb;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +39,7 @@ public class Main {
 	protected String bibFile;
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
+	LNScanner input;
 
 	public static String[] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
@@ -80,25 +83,30 @@ public class Main {
 			inputFile = args[0];
 		}
 	}
+	final String[] usage_msg = {
+			"",
+			"Script commands:",
+			"  bibfile: <bibfile.bib>    % read a bibliography file",
+			"  pubs: <pubinfo>           % specify pubs to use (by key)",
+			"  .topic: <topics>          % specify publication topics",
+			"  include <script>          % read input from another script",
+			"  generate: <subcommands>   % generate an HTML output file",
+			"  .output: <output.html>    % specify HTML output destination",
+			"  .section: <subcommands>   % create a list of publications",
+			"  ..select: <selectors>     % choose publications for current section",
+			"  ...pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'",
+			"  ...topic: <type>          % choose pubs by topic",
+			"  .                         % end a multiline command",
+			"  ..                        % end a multiline subcommand (etc.)",
+			"",
+			"Multiline commands and definitions are ended with a single period.",
+			"Initial periods are ignored in command lines. New macro definitions can be",
+			"added anywhere."
+	};
 	protected void help() {
 		usage();
-		System.out.println("\nScript commands:\r\n");
-		System.out.println("  bibfile: <bibfile.bib>    % read a bibliography file");
-		System.out.println("  pubs: <pubinfo>           % specify pubs to use (by key)");
-		System.out.println("  .topic: <topics>          % specify publication topics");
-		System.out.println("  generate: <subcommands>   % generate an HTML output file");
-		System.out.println("  .output: <output.html>    % specify HTML output destination");
-		System.out.println("  .section: <subcommands>   % create a list of publications");
-		System.out.println("  ..select: <selectors>     % choose publications for current section");
-		System.out.println("  ...pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'");
-		System.out.println("  ...topic: <type>          % choose pubs by topic");
-		System.out.println("  .                         % end a multiline command");
-		System.out.println("  ..                        % end a multiline subcommand (etc.)");
-		
-		System.out.println("\r\nMultiline commands and definitions are ended with a single period.");
-		System.out.println("Initial periods are ignored in command lines.");
-		
-
+		for (String ln : usage_msg)
+			System.out.println(ln);
 	}
 	
 	protected void dumpDefns() {
@@ -127,11 +135,11 @@ public class Main {
 		addEnvMacros();
 
 		try {
-			LNScanner sc = new LNScanner(new FileReader(inputFile));
+			input = new LNScanner(inputFile, new FileReader(inputFile));
 			try {
-				runScript(sc);
+				runScript(input);
 			} finally {
-				sc.close();
+				input.close();
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("File not found: " + inputFile);
@@ -148,7 +156,7 @@ public class Main {
 				System.err.println("Parse error: " + e.getMessage());
 				continue;
 			}
-			runScriptLine(av.attribute, av.value, lineno);
+			runScriptLine(av.attribute, av.value, lineno, sc.inputName());
 
 		}
 		if (!generated) {
@@ -160,7 +168,7 @@ public class Main {
 	protected void readPublications(LNScanner sc) throws Parsing.ParseError {
 		while (sc.hasNextLine()) {
 			Parsing.AttrValue av = Parsing.parseAttribute(sc);
-			LNScanner pubsc = new LNScanner(av.value, sc.lineNo());
+			LNScanner pubsc = new LNScanner(sc.inputName(), av.value, sc.lineNo());
 			try {
 				Publication p = new Publication(av.attribute, pubsc, db);
 				pubs.put(p.key, p);
@@ -174,7 +182,7 @@ public class Main {
 	 * execute a line of the script with form 'attribute: value', where
 	 * 'attribute' may be a command or an attribute to be defined.
 	 */
-	protected void runScriptLine(String attribute, String value, int lineno) {
+	protected void runScriptLine(String attribute, String value, int lineno, String input_name) {
 		switch (attribute) {
 		case "bibfile":
 			bibFile = value;
@@ -203,22 +211,46 @@ public class Main {
 				return;
 			}
 			try {
-				readPublications(new LNScanner(value, lineno));
+				readPublications(new LNScanner(input_name, value, lineno));
 
 				System.out.println("Found " + pubs.size()
 						+ " publications in script.");
 			} catch (ParseError e) {
-				System.out.println("No publications in script at line "
+				System.out.println("No publications in script " + input_name + " at line "
 						+ lineno + ": " + e.getMessage());
 			}
 			break;
 		case "generate":
 			generated = true;
-			LNScanner gsc = new LNScanner(value, lineno);
+			LNScanner gsc = new LNScanner(input_name, value, lineno);
 			try {
 				generate(gsc);
 			} finally {
 				gsc.close();
+			}
+			break;
+		case "include":
+			Reader r = null;
+			try {
+				File inpf = new File(inputFile);
+				File inc = new File(inpf.getParent(), value);
+				r = new FileReader(inc);
+				final int BUFLEN = 4096;
+				char[] buffer = new char[BUFLEN];
+				StringBuilder s = new StringBuilder();
+				int n;
+				for (;;) {
+					n = r.read(buffer);
+					if (n < 0) break;
+					s.append(buffer, 0, n);
+				}
+				System.out.println("Read " + s.length() + " chars from " + value);
+				input.push(value, new Scanner(s.toString()));				
+				r.close();
+			} catch (FileNotFoundException e) {
+				System.out.println(value + ":" + e.getMessage());
+			} catch (IOException e) {
+				System.out.println(value + ":" + e.getMessage());
 			}
 			break;
 		default:
@@ -358,8 +390,7 @@ public class Main {
 					System.out.println("Creating output file " + fname);
 					if (w != null) {
 						System.err
-								.println("Cannot have two outputs defined for one bib generation: line "
-										+ lineno);
+								.println("Cannot have two outputs defined for one bib generation: " + gsc);
 						return;
 					}
 					try {
@@ -379,7 +410,7 @@ public class Main {
 						generateHeader(w);
 						header = true;
 					}
-					LNScanner ssc = new LNScanner(av.value, lineno);
+					LNScanner ssc = new LNScanner(gsc.inputName(), av.value, lineno);
 					try {
 						generateSection(w, ssc);
 					} finally {
@@ -424,7 +455,7 @@ public class Main {
 				switch (av.attribute) {
 				case "select":
 					any_select = true;
-					LNScanner sssc = new LNScanner(av.value, ln);
+					LNScanner sssc = new LNScanner(ssc.inputName(), av.value, ln);
 					List<Filter> filters = new ArrayList<Filter>();
 					try {
 						while (sssc.hasNextLine()) {

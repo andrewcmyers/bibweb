@@ -31,7 +31,7 @@ public class Parsing {
 			lsc.skip(colon);
 			return lsc.hasNextLine() ? lsc.nextLine() : readMultiline(sc);
 		} catch (NoSuchElementException e) {
-			throw new ParseError("No attribute value found at line " + sc.lineNo());
+			throw new ParseError("No attribute value found at " + sc);
 		}
 	}
 	
