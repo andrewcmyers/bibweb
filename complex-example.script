@@ -1,6 +1,6 @@
 title: \author
 bibfile: \HOME/papers/bibtex/pm-master.bib
-author: Andrew Myers
+author: John Doe
 stylesheet: default.css
 papers: http://www.cs.cornell.edu/andru/papers
 projects: http://www.cs.cornell.edu/projects
@@ -49,7 +49,6 @@ opening:
     <li><a href="pubs-topic.html#persistence">\bbullet{}Distribution and persistence</a>
     <li><a href="pubs-topic.html#pl">\bbullet{}Programming language design and implementation</a>
     <li><a href="pubs-topic.html#networking">\bbullet{}Networking</a>
-    <li><a href="pubs-topic.html#bio">\bbullet{}Molecular biology</a>
     <li><a href="pubs-topic.html#edu">\bbullet{}Education</a>
 </ul>
 </a>
@@ -186,10 +185,6 @@ generate:
  section:
   intro: <a name="networking"><h2>Networking</h2></a>
   select: topic: Networking
-..
- section:
-  intro: <a name="bio"><h2>Molecular Biology</h2></a>
-  select: topic: MolBio
 ..
  section:
   intro: <a name="edu"><h2>Education</h2></a>
