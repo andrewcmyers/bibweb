@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import org.jbibtex.BibTeXDatabase;
@@ -155,6 +156,8 @@ public class Main {
 			} catch (ParseError e) {
 				System.err.println("Parse error: " + e.getMessage());
 				continue;
+			} catch (NoSuchElementException e) {
+				break;
 			}
 			runScriptLine(av.attribute, av.value, lineno, sc.inputName());
 
@@ -201,6 +204,7 @@ public class Main {
 			} catch (IOException e) {
 				System.err.println("IO exception parsing bib file at " + lineno);
 			}
+			if (db != null)
 			System.out.println("Found " + db.getObjects().size()
 					+ " objects in BibTeX file.");
 			break;
@@ -599,7 +603,7 @@ public class Main {
 		String authors = formattedAuthors(p);
 		
 		Context ctxt = new Context();
-		if (p.title() != null) ctxt.add("title", p.title());
+		if (p.title() != null) ctxt.add("title", expand(p.title(), true));
 		else ctxt.add("title", "<em>No title</em>");
 		ctxt.add("wherepublished", where_published);
 		ctxt.add("authors", authors);

@@ -10,6 +10,7 @@ import bibweb.Namespace.LookupFailure;
 public class Tex2HTML {
 	Context context = new Context();
 	private ExtInfo ext_info;
+	private static final boolean showbraces = false;
 	
 	Tex2HTML(ExtInfo ext)
 	{
@@ -86,7 +87,7 @@ public class Tex2HTML {
 						break;
 					case '{':
 						bracedepth++;
-//						System.out.println("incrementing brace depth at " + inp);
+						if (showbraces) System.out.println("incrementing brace depth to " + bracedepth + " at " + inp);
 						context.push();
 						state = State.Normal;
 						break;
@@ -95,7 +96,7 @@ public class Tex2HTML {
 							throw new T2HErr(
 									"More closing braces than opening ones: " + inp);
 						bracedepth--;
-//						System.out.println("decrementing brace depth at " + inp);
+						if (showbraces) System.out.println("decrementing brace depth to " + bracedepth + " at " + inp);
 						context.pop();
 						state = State.Normal;
 						break;
@@ -184,7 +185,7 @@ public class Tex2HTML {
 						cur_arg = new StringBuilder();
 						
 						macrodepth = bracedepth;
-//						System.out.println("incrementing brace depth in macro (1) at " + inp);
+						if (showbraces) System.out.println("incrementing brace depth in macro (1) to " + bracedepth + " at " + inp);
 						bracedepth++;
 					} else {
 						if (c != eof)
@@ -204,11 +205,11 @@ public class Tex2HTML {
 					if (c == '{') {
 						cur_arg.append(c);
 						bracedepth++;
-//						System.out.println("incrementing brace depth in macro at " + inp);
+						if (showbraces) System.out.println("incrementing brace depth in macro (2) to " + bracedepth + " at " + inp);
 						// state = State.LongMacroArg;
 					} else if (c == '}') {
 						bracedepth--;
-//						System.out.println("decrementing brace depth in macro at " + inp);
+						if (showbraces) System.out.println("decrementing brace depth in macro to " + bracedepth + " at " + inp);
 						assert bracedepth >= macrodepth;
 						if (bracedepth == macrodepth) {
 							state = State.FullMacro;

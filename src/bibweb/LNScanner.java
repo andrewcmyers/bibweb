@@ -61,7 +61,7 @@ public class LNScanner {
 		return input().lineno;
 	}
 
-	String nextLine() {
+	String nextLine() throws NoSuchElementException {
 		if (!hasNextLine()) throw new NoSuchElementException();
 		return input().nextLine();
 	}
