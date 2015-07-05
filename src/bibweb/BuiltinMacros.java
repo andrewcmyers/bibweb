@@ -59,11 +59,11 @@ public class BuiltinMacros {
 	    { "\\title", "(title of this publication)" },
 	    { "\\wherepublished", "(publication venue and pages)" },
 	    { "\\year", "(year of this publication)" },
-	    // ifdef
-	    // ifndef
-	    // pubinfo
-	    // ifeq
-	    // ifne
-	    // def
+	    { "\\ifdef", "(insert second argument if first is a defined macro)"},
+	    { "\\ifndef", "(insert second argument if first is not a defined macro)"},
+	    { "\\ifeq", "(insert third argument if first two are equal)"},
+	    { "\\ifne", "(insert third argument if first two are not equal)"},
+	    { "\\pubinfo", "(\\pubinfo{key}{attribute} looks up an attribute of publication with the given key)"},
+	    { "\\def", "(\\def{name}{expansion} defines a new macro. Arguments can be named as #1, #2, etc. in expansion"}
 	};
 }
