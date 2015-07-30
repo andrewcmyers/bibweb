@@ -2,3 +2,38 @@ Make line numbers more accurate in error messages.
 
 Add support for \def to allow overriding definitions locally. However,
 this needs to be tied into brace processing.
+
+The syntax is a kludge. I should have just written a grammar. A better
+syntax would use braces like this:
+
+pubs {
+  ml-tosem: topic: Security
+  zm01: topic: Security
+  zm02-hosc: topic: Security
+  zm01b: topic: Security
+  myers-wwos4: topic: Persistence
+  myers-thesis: topic: Persistence
+  loplas: topic: Persistence
+  theta: topic: Languages
+  thor-interface: topic: Persistence
+  where-clauses: topic: Languages
+  bidirectional: topic: Languages
+  myers-metaobj: topic: Languages
+  java-popl97 {
+   topic: Languages
+   projectpage: http://www.cs.cornell.edu/polyj
+  }
+  sigmod96: topic: Persistence
+  ml-ifc-97: topic: Security
+  castro-sosp97: topic: Persistence
+  myers-metaobj: topic: Languages
+  ml-sp98: topic: Security
+  polyj {
+   pubtype: software
+   topic: Languages
+   project: PolyJ
+   projectpage: http://www.cs.cornell.edu/polyj
+  }
+
+One thing to watch out for is losing expressive power in macro defns,
+though.
