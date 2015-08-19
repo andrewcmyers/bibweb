@@ -2,6 +2,12 @@ package bibweb;
 
 import static bibweb.Parsing.isMultilineValue;
 import static bibweb.Parsing.rhsClosed;
+import static easyIO.Regex.concat;
+import static easyIO.Regex.constant;
+import static easyIO.Regex.oneOrMore;
+import static easyIO.Regex.parseToDelimiter;
+import static easyIO.Regex.parseToPattern;
+import static easyIO.Regex.whitespace;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -15,7 +21,6 @@ import org.jbibtex.Value;
 
 import bibweb.Parsing.ParseError;
 import easyIO.Recognizer;
-import easyIO.Regex;
 import easyIO.Scanner;
 
 // A publication. Typically parsed from the input file and overlaid with information
@@ -42,7 +47,7 @@ public class Publication {
 
 				while (!rhsClosed(sc, ml_topic)) {
 //					System.out.print("sc0: " + sc);
-					topics.add(Regex.parseToPattern(sc, Regex.oneOrMore(Regex.whitespace())));
+					topics.add(parseToPattern(sc, oneOrMore(whitespace())));
 					
 //					System.out.print("sc1: " + sc);
 					sc.trailingWhitespace();
@@ -126,11 +131,11 @@ public class Publication {
 		String a = author();
 		if (a == null) return new String[0];
 		Scanner s = new Scanner(new StringReader(a), a);
-		Recognizer and_r = Regex.concat(Regex.oneOrMore(Regex.whitespace()),
-				Regex.concat(Regex.constant("and"),
-						Regex.oneOrMore(Regex.whitespace())));
+		Recognizer and = concat(oneOrMore(whitespace()),
+						   concat(constant("and"),
+						          oneOrMore(whitespace())));
 		while (s.hasNext())
-			auths.add(Regex.parseToDelimiter(s, and_r));
+			auths.add(parseToDelimiter(s, and));
 		return auths.toArray(new String[0]);
 	}
 
