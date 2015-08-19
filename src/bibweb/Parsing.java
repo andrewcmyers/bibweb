@@ -1,18 +1,13 @@
 package bibweb;
 
-import static java.lang.System.out;
-
 import java.util.NoSuchElementException;
-import java.util.regex.Pattern;
 
 import easyIO.Scanner;
 import easyIO.UnexpectedInput;
 
 public class Parsing {
 	int lineno;
-	
-	static Pattern colon = Pattern.compile("\\s*:\\s*");
-	
+		
 	@SuppressWarnings("serial")
 	public static class ParseError extends Exception {
 		public ParseError(String msg) {

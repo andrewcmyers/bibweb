@@ -1,20 +1,12 @@
 package bibweb;
 
-import java.io.StringReader;
-
-import static bibweb.Parsing.rhsClosed;
 import static bibweb.Parsing.isMultilineValue;
+import static bibweb.Parsing.rhsClosed;
 
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import easyIO.Recognizer;
-import easyIO.Regex;
-import easyIO.Scanner;
-import easyIO.UnexpectedInput;
-
-import java.util.regex.Pattern;
 
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -22,6 +14,9 @@ import org.jbibtex.Key;
 import org.jbibtex.Value;
 
 import bibweb.Parsing.ParseError;
+import easyIO.Recognizer;
+import easyIO.Regex;
+import easyIO.Scanner;
 
 // A publication. Typically parsed from the input file and overlaid with information
 // from the script.
@@ -32,8 +27,6 @@ public class Publication {
 	protected Map<String, String> defns = new HashMap<>();
 	protected Namespace bindings;
 	protected BibTeXDatabase db;
-
-	private Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
 
 	Publication(String k, Scanner sc, BibTeXDatabase db) throws ParseError {
 		this.db = db;
