@@ -174,7 +174,6 @@ public class Main {
 		}
 		while (!rhsClosed(sc, multiline)) {
 			String pubname = Parsing.parseAttribute(sc);
-			System.out.println("Saw publication " + pubname);
 			try {
 				Publication p = new Publication(pubname, sc, db);
 				pubs.put(pubname,  p);
@@ -452,7 +451,6 @@ public class Main {
 					while (!rhsClosed(sc, ml_select)) {
 						String selector = Parsing.parseAttribute(sc);
 						String value = Parsing.parseValue(sc);
-						out.println("Selecting " + selector + "=" + value);
 						filters.add(createFilter(selector, value));
 					}
 
