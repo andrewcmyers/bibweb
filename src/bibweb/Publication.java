@@ -1,9 +1,19 @@
 package bibweb;
 
+import java.io.StringReader;
+
+import static bibweb.Parsing.rhsClosed;
+import static bibweb.Parsing.isMultilineValue;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
+
+import easyIO.Recognizer;
+import easyIO.Regex;
+import easyIO.Scanner;
+import easyIO.UnexpectedInput;
+
 import java.util.regex.Pattern;
 
 import org.jbibtex.BibTeXDatabase;
@@ -25,27 +35,33 @@ public class Publication {
 
 	private Pattern id_pat = Pattern.compile("[a-zA-Z0-9_]([a-zA-Z0-9_]|-)*");
 
-	Publication(String k, LNScanner sc, BibTeXDatabase db) throws ParseError {
+	Publication(String k, Scanner sc, BibTeXDatabase db) throws ParseError {
 		this.db = db;
 		key = k;
 		bibkey = new Key(k);
 		topics = new ArrayList<String>();
-		while (sc.hasNextLine()) {
-			Parsing.AttrValue av = Parsing.parseAttribute(sc);
-			switch (av.attribute) {
+		boolean multiline = Parsing.isMultilineValue(sc);
+		while (!rhsClosed(sc, multiline)) {
+			String attribute = Parsing.parseAttribute(sc);
+			switch (attribute) {
 			case "topic":
-				Scanner tops = new Scanner(av.value);
-				try {
-					while (tops.hasNext(id_pat)) {
-						String t = tops.next(id_pat);
-						topics.add(t);
-					}
-				} finally {
-					tops.close();
+				boolean ml_topic = isMultilineValue(sc);
+
+				while (!rhsClosed(sc, ml_topic)) {
+//					System.out.print("sc0: " + sc);
+					topics.add(Regex.parseToPattern(sc, Regex.oneOrMore(Regex.whitespace())));
+					
+//					System.out.print("sc1: " + sc);
+					sc.trailingWhitespace();
+					
+//					System.out.print("sc2: " +sc);
 				}
+//				System.out.println("topics are " + topics);
+//				System.out.println("scanner: " + sc);
 				break;
 			default:
-				defns.put(av.attribute, av.value);
+				String value = Parsing.parseValue(sc);
+				defns.put(attribute, value);
 			}
 		}
 	}
@@ -116,12 +132,12 @@ public class Publication {
 		ArrayList<String> auths = new ArrayList<String>();
 		String a = author();
 		if (a == null) return new String[0];
-		Scanner sc = new Scanner(a);
-		sc.useDelimiter("(\\s)(\\s)*and(\\s)(\\s)*");
-		while (sc.hasNext()) {
-			auths.add(sc.next());
-		}
-		sc.close();
+		Scanner s = new Scanner(new StringReader(a), a);
+		Recognizer and_r = Regex.concat(Regex.oneOrMore(Regex.whitespace()),
+				Regex.concat(Regex.constant("and"),
+						Regex.oneOrMore(Regex.whitespace())));
+		while (s.hasNext())
+			auths.add(Regex.parseToDelimiter(s, and_r));
 		return auths.toArray(new String[0]);
 	}
 

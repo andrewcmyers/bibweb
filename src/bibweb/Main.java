@@ -1,11 +1,15 @@
 package bibweb;
 
+import static bibweb.Parsing.isMultilineValue;
+import static java.lang.System.out;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,8 +19,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
 
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -28,6 +30,11 @@ import org.jbibtex.TokenMgrException;
 import bibweb.Parsing.ParseError;
 import bibweb.PubInfo.GetPubCtxt;
 import bibweb.Tex2HTML.T2HErr;
+import easyIO.Recognizer;
+import easyIO.Regex;
+import easyIO.Scanner;
+import easyIO.UnexpectedInput;
+import static bibweb.Parsing.rhsClosed;
 
 public class Main {
 	protected String[] args;
@@ -40,7 +47,7 @@ public class Main {
 	protected String bibFile;
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
-	LNScanner input;
+	Scanner input;
 
 	public static String[] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
@@ -107,20 +114,20 @@ public class Main {
 	protected void help() {
 		usage();
 		for (String ln : usage_msg)
-			System.out.println(ln);
+			out.println(ln);
 	}
 	
 	protected void dumpDefns() {
-		System.out.println("Default definitions:\r\n");
+		out.println("Default definitions:\r\n");
 		for (int i = 0; i < BuiltinMacros.macros.length; i++) {
-			System.out.print(BuiltinMacros.macros[i][0]);
-			System.out.print(": ");
+			out.print(BuiltinMacros.macros[i][0]);
+			out.print(": ");
 			String value = BuiltinMacros.macros[i][1];
 			if (value.contains("\n")) {
-				System.out.println("\n" + value);
-				System.out.println(".");
+				out.println("\n" + value);
+				out.println(".");
 			} else {
-				System.out.println(value);
+				out.println(value);
 			}
 		}
 	}
@@ -136,7 +143,7 @@ public class Main {
 		addEnvMacros();
 
 		try {
-			input = new LNScanner(inputFile, new FileReader(inputFile));
+			input = new Scanner(new FileReader(inputFile), inputFile);
 			try {
 				runScript(input);
 			} finally {
@@ -144,39 +151,36 @@ public class Main {
 			}
 		} catch (FileNotFoundException e) {
 			System.err.println("File not found: " + inputFile);
+		} catch (IOException e) {
+			System.err.println("IO Exception in " + inputFile + ": " + e.getMessage());
 		}
 	}
 
-	protected void runScript(LNScanner sc) {
-		while (sc.hasNextLine()) {
-			int lineno = sc.lineNo();
-			Parsing.AttrValue av;
-			try {
-				av = Parsing.parseAttribute(sc);
-			} catch (ParseError e) {
-				System.err.println("Parse error: " + e.getMessage());
-				continue;
-			} catch (NoSuchElementException e) {
-				break;
-			}
-			runScriptLine(av.attribute, av.value, lineno, sc.inputName());
-
+	protected void runScript(Scanner sc) {
+		while (sc.hasNext()) {
+			runScriptLine(sc);
 		}
 		if (!generated) {
-			System.out
-					.println("No 'generate' command found, nothing generated.");
+			out.println("No 'generate' command found, nothing generated.");
 		}
 	}
 
-	protected void readPublications(LNScanner sc) throws Parsing.ParseError {
-		while (sc.hasNextLine()) {
-			Parsing.AttrValue av = Parsing.parseAttribute(sc);
-			LNScanner pubsc = new LNScanner(sc.inputName(), av.value, sc.lineNo());
+	
+	private void readPublications(Scanner sc) {
+		boolean multiline = isMultilineValue(sc);
+		if (!multiline) {
+			out.println("Publication list must use braces ({}) at " + sc.location());
+			return;
+		}
+		while (!rhsClosed(sc, multiline)) {
+			String pubname = Parsing.parseAttribute(sc);
+			System.out.println("Saw publication " + pubname);
 			try {
-				Publication p = new Publication(av.attribute, pubsc, db);
-				pubs.put(p.key, p);
-			} finally {
-				pubsc.close();
+				Publication p = new Publication(pubname, sc, db);
+				pubs.put(pubname,  p);
+			} catch (ParseError e) {
+				out.println("Parse error " + e.getMessage() + " at " + sc.location());
+				return;
 			}
 		}
 	}
@@ -185,82 +189,64 @@ public class Main {
 	 * execute a line of the script with form 'attribute: value', where
 	 * 'attribute' may be a command or an attribute to be defined.
 	 */
-	protected void runScriptLine(String attribute, String value, int lineno, String input_name) {
+	protected void runScriptLine(Scanner sc) {		
+		String attribute = Parsing.parseAttribute(sc);
+
 		switch (attribute) {
 		case "bibfile":
-			bibFile = value;
+			bibFile = Parsing.parseValue(sc);
 			BibTeXParser parser;
 			try {
 				parser = new BibTeXParser();
 			} catch (TokenMgrException e) {
-				System.err.println("Failed reading bib file at line " + lineno + ": " + e.getMessage());
+				System.err.println("Failed reading bib file at " + sc.location());
 				return;
 			} catch (ParseException e) {
-				System.err.println("Failed reading bib file at line " + lineno + ": " + e.getMessage());
+				System.err.println("Failed reading bib file at " + sc.location());
 				return;
 			}
 			try {
 				db = parser.parseFully(new FileReader(expand(bibFile)));
 			} catch (IOException e) {
-				System.err.println("IO exception parsing bib file at " + lineno);
+				System.err.println("IO exception parsing bib file at " + sc.location());
 			}
 			if (db != null)
-			System.out.println("Found " + db.getObjects().size()
+				out.println("Found " + db.getObjects().size()
 					+ " objects in BibTeX file.");
 			break;
 		case "pubs":
 			if (db == null) {
-				System.out.println("Warning: should read the bib file before reading the 'pubs' list at line "
-								+ lineno);
+				out.println("Warning: should read the bib file before reading the 'pubs' list at "
+						+ sc.location());
 				return;
 			}
-			try {
-				readPublications(new LNScanner(input_name, value, lineno));
+			readPublications(sc);
 
-				System.out.println("Found " + pubs.size()
-						+ " publications in script.");
-			} catch (ParseError e) {
-				System.out.println("No publications in script " + input_name + " at line "
-						+ lineno + ": " + e.getMessage());
-			}
+			System.out.println("Found " + pubs.size()
+					+ " publications in script.");
 			break;
 		case "generate":
 			generated = true;
-			LNScanner gsc = new LNScanner(input_name, value, lineno);
-			try {
-				generate(gsc);
-			} finally {
-				gsc.close();
-			}
+			generate(sc);
 			break;
 		case "include":
 			Reader r = null;
+			File inpf = new File(inputFile);
+			String fname = Parsing.parseValue(sc);
+			File inc = new File(inpf.getParent(), fname);
 			try {
-				File inpf = new File(inputFile);
-				File inc = new File(inpf.getParent(), value);
 				r = new FileReader(inc);
-				final int BUFLEN = 4096;
-				char[] buffer = new char[BUFLEN];
-				StringBuilder s = new StringBuilder();
-				int n;
-				for (;;) {
-					n = r.read(buffer);
-					if (n < 0) break;
-					s.append(buffer, 0, n);
-				}
-				System.out.println("Read " + s.length() + " chars from " + value);
-				input.push(value, new Scanner(s.toString()));				
-				r.close();
+				sc.includeSource(r, fname);
 			} catch (FileNotFoundException e) {
-				System.out.println(value + ":" + e.getMessage());
-			} catch (IOException e) {
-				System.out.println(value + ":" + e.getMessage());
+				System.out.println(fname + ":" + e.getMessage());
 			}
 			break;
 		default:
-			t2h.addMacro(attribute, value);
+			t2h.addMacro(attribute, Parsing.parseValue(sc));
 		}
 	}
+
+
 
 	protected void generateHeader(PrintWriter w) {
 		w.print(expand("\\header"));
@@ -287,18 +273,20 @@ public class Main {
 	protected String normalizeAuthor(String a) {
 		if (a.contains(", ")) {
 			StringBuilder b = new StringBuilder();
-			Scanner s = new Scanner(a);
-			s.useDelimiter(", ");
-			String surname = s.next();
-			String firstname = s.next();
+			Scanner s = new Scanner(new StringReader(a), a);
+			Recognizer r = Regex.constant(", ");
+			String surname = Regex.parseToPattern(s, r);
+			try { Regex.scanPattern(s, r); } catch (UnexpectedInput e) {}
+			String firstname = Regex.parseToPattern(s, r);
 			b.append(firstname);
 			b.append(" ");
 			b.append(surname);
 			if (s.hasNext()) {
-				String jr = s.next();
+				try { Regex.scanPattern(s, r); } catch (UnexpectedInput e) {}
+				String jr = Regex.parseToPattern(s, r);
 				b.append(", "); b.append(jr);
 			}
-			s.close();
+			try { s.close(); } catch (IOException e) {}
 			return b.toString();
 		}
 		return a;
@@ -341,25 +329,25 @@ public class Main {
 		}
 	}
 
-	protected Filter createFilter(final Parsing.AttrValue selector) {
-		switch (selector.attribute) {
+	protected Filter createFilter(final String selector, final String value) {
+		switch (selector) {
 		case "pubtype":
 			return new Filter() {
 				public boolean select(Publication p) {
-					return p.pubType().equals(selector.value);
+					return p.pubType().equals(value);
 				}
 			};
 		case "topic":
 			return new Filter() {
 				public boolean select(Publication p) {
-					return p.topics.contains(selector.value);
+					return p.topics.contains(value);
 				}
 			};
 		case "author":
 			return new Filter() {
 				public boolean select(Publication p) {
 					for (String a : p.authors()) {
-						if (a.equals(selector.value))
+						if (a.equals(value))
 							return true;
 					}
 					return false;
@@ -370,31 +358,35 @@ public class Main {
 		default: // general selection on an attribute
 			return new Filter() {
 				public boolean select(Publication p) {
-					String v = p.field(selector.attribute, new Key(selector.attribute));
-					return (v != null && selector.value.equals(v));
+					String v = p.field(selector, new Key(selector));
+					return (v != null && value.equals(v));
 				}
 			};
 		}
 	}
 
-	protected void generate(LNScanner gsc) {
+	protected void generate(Scanner sc) {
 		t2h.push();
 
 		String fname = null;
 		PrintWriter w = null;
 		boolean sections = false;
 		boolean header = false;
+		boolean multiline = Parsing.isMultilineValue(sc);
+		if (!multiline) {
+			System.out.println("generate command requires braces {} : " + sc.location());
+			return;
+		}
 		try {
-			while (gsc.hasNextLine()) {
-				int lineno = gsc.lineNo();
-				Parsing.AttrValue av = Parsing.parseAttribute(gsc);
-				switch (av.attribute) {
+			while (!rhsClosed(sc, multiline)) {
+				String attribute = Parsing.parseAttribute(sc);
+				switch (attribute) {
 				case "output":
-					fname = av.value;
+					fname = Parsing.parseValue(sc);
 					System.out.println("Creating output file " + fname);
 					if (w != null) {
 						System.err
-								.println("Cannot have two outputs defined for one bib generation: " + gsc);
+								.println("Cannot have two outputs defined for one bib generation: " + sc);
 						return;
 					}
 					try {
@@ -414,15 +406,10 @@ public class Main {
 						generateHeader(w);
 						header = true;
 					}
-					LNScanner ssc = new LNScanner(gsc.inputName(), av.value, lineno);
-					try {
-						generateSection(w, ssc);
-					} finally {
-						ssc.close();
-					}
+					generateSection(w, sc);
 					break;
 				default:
-					t2h.addMacro(av.attribute, av.value);
+					t2h.addMacro(attribute, Parsing.parseValue(sc));
 				}
 			}
 			if (w != null) {
@@ -440,36 +427,35 @@ public class Main {
 				System.out
 						.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
 			}
-			gsc.close();
 			t2h.pop();
 			if (w != null)
 				w.close();
 		}
 	}
 
-	protected void generateSection(PrintWriter w, LNScanner ssc) throws ParseError {
+	protected void generateSection(PrintWriter w, Scanner sc) throws ParseError {
 		Collection<Publication> selected = new HashSet<>();
 		t2h.push();
 		boolean any_select = false;
+		boolean multiline = isMultilineValue(sc);
 		
 		try {
-			while (ssc.hasNextLine()) {
-				int ln = ssc.lineNo();
-				Parsing.AttrValue av = Parsing.parseAttribute(ssc);
-				switch (av.attribute) {
+			while (!rhsClosed(sc, multiline)) {
+				String attribute = Parsing.parseAttribute(sc);
+				
+				switch (attribute) {
 				case "select":
 					any_select = true;
-					LNScanner sssc = new LNScanner(ssc.inputName(), av.value, ln);
+					
+					boolean ml_select = isMultilineValue(sc);
 					List<Filter> filters = new ArrayList<Filter>();
-					try {
-						while (sssc.hasNextLine()) {
-							final Parsing.AttrValue selector = Parsing
-									.parseAttribute(sssc);
-							filters.add(createFilter(selector));
-						}
-					} finally {
-						sssc.close();
+					while (!rhsClosed(sc, ml_select)) {
+						String selector = Parsing.parseAttribute(sc);
+						String value = Parsing.parseValue(sc);
+						out.println("Selecting " + selector + "=" + value);
+						filters.add(createFilter(selector, value));
 					}
+
 					nextpub: for (Publication p : pubs.values()) {
 						for (Filter f : filters) {
 							if (!f.select(p)) continue nextpub;
@@ -478,7 +464,7 @@ public class Main {
 					}
 					break;
 				default:
-					t2h.addMacro(av.attribute, av.value);
+					t2h.addMacro(attribute, Parsing.parseValue(sc));
 					break;
 				}
 			}

@@ -1,0 +1,44 @@
+bibfile: example.bib
+
+pubs {
+    abadi99 {
+      authors: Mart&iacute;n Abadi and Andrew D. Gordon
+topic: Security languages
+ project: spi
+      blurb {
+        A seminal paper on using programming languages to model cryptographic
+        protocols.
+      }
+    }
+    dummy1 {
+        pubtype: inproceedings
+        title: A fake paper
+        authors: John Doe and Jane Doe
+        topic: security
+        booktitle: A fake conference
+        year: 2015
+        month: June
+    }
+}
+
+closing {
+    </div>
+    <p>Note: The paper by Abadi and Gordon was chosen because
+    it was the first entry in a real BibTex file!</p>
+}
+
+% comment
+
+generate {
+    output: example.html
+    section {
+        intro: <h2>All publications</h2>
+    }
+    section {
+        intro: <h2>Publications by Andrew Gordon</h2>
+        select: pubtype: article
+        select {
+            author: Andrew D. Gordon
+        }
+    }
+}
