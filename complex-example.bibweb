@@ -1,3 +1,6 @@
+% this complex example is still using the old syntax, unfortunately.
+%
+
 title: \author
 bibfile: \HOME/papers/bibtex/pm-master.bib
 author: John Doe
