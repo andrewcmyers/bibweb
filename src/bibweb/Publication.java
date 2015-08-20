@@ -132,8 +132,8 @@ public class Publication {
 		if (a == null) return new String[0];
 		Scanner s = new Scanner(new StringReader(a), a);
 		Recognizer and = concat(oneOrMore(whitespace()),
-						   concat(constant("and"),
-						          oneOrMore(whitespace())));
+						 concat(constant("and"),
+						        oneOrMore(whitespace())));
 		while (s.hasNext())
 			auths.add(parseToDelimiter(s, and));
 		return auths.toArray(new String[0]);
