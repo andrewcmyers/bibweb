@@ -96,20 +96,18 @@ public class Main {
 			"Script commands:",
 			"  bibfile: <bibfile.bib>    % read a bibliography file",
 			"  pubs: <pubinfo>           % specify pubs to use (by key)",
-			"  .topic: <topics>          % specify publication topics",
-			"  include <script>          % read input from another script",
+			"    topic: <topics>         % specify publication topics",
+			"  include: <script>         % read input from another bibweb script",
 			"  generate: <subcommands>   % generate an HTML output file",
-			"  .output: <output.html>    % specify HTML output destination",
-			"  .section: <subcommands>   % create a list of publications",
-			"  ..select: <selectors>     % choose publications for current section",
-			"  ...pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'",
-			"  ...topic: <type>          % choose pubs by topic",
-			"  .                         % end a multiline command",
-			"  ..                        % end a multiline subcommand (etc.)",
+			"    output: <output.html>   % specify HTML output destination",
+			"    section: <subcommands>  % create a list of publications",
+			"    select: <selectors>     % choose publications for current section",
+			"    pubtype: <type>         % choose pubs by type, e.g., 'inproceedings'",
+			"    topic: <type>           % choose pubs by topic",
 			"",
-			"Multiline commands and definitions are ended with a single period.",
-			"Initial periods are ignored in command lines. New macro definitions can be",
-			"added anywhere."
+			"Multiline commands and definitions use open brace ({) instead of a colon (:)",
+			"and are closed by a closing brace on a line by itself.",
+			"New macro definitions can be added anywhere."
 	};
 	protected void help() {
 		usage();
