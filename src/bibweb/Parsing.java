@@ -2,6 +2,8 @@ package bibweb;
 
 import java.util.NoSuchElementException;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import easyIO.Scanner;
 import easyIO.UnexpectedInput;
 
@@ -15,7 +17,7 @@ public class Parsing {
 		}
 	}
 
-	static void skipCommentLines(Scanner sc) {
+	static void skipCommentLines(@NonNull Scanner sc) {
 		sc.whitespace();
 		while (sc.peek() == '%') {
 			try {

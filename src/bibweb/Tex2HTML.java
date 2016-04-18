@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import bibweb.Namespace.LookupFailure;
 
 public class Tex2HTML {
@@ -29,7 +31,8 @@ public class Tex2HTML {
 		context.pop();
 	}
 
-	public void addMacro(String from, String to) {
+	public void addMacro(String from, @Nullable String to) {
+		if (to != null)
 		context.add(from, to);
 	}
 

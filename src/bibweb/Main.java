@@ -1,6 +1,7 @@
 package bibweb;
 
 import static bibweb.Parsing.isMultilineValue;
+import static bibweb.Parsing.rhsClosed;
 import static java.lang.System.out;
 
 import java.io.File;
@@ -20,6 +21,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.BibTeXParser;
@@ -34,12 +37,11 @@ import easyIO.Recognizer;
 import easyIO.Regex;
 import easyIO.Scanner;
 import easyIO.UnexpectedInput;
-import static bibweb.Parsing.rhsClosed;
 
 public class Main {
 	protected String[] args;
-	protected String inputFile;
-	protected BibTeXDatabase db;
+	@Nullable protected String inputFile;
+	protected Maybe<BibTeXDatabase> db;
 	protected HashMap<String, Publication> pubs;
 	/** Records the generated namespace for each publication. */
 	Map<Publication, Namespace> pub_defns = new HashMap<>();
@@ -47,24 +49,32 @@ public class Main {
 	protected String bibFile;
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
-	Scanner input;
+	
 
-	public static String[] month_names = { "January", "February", "March",
+	public static final String @NonNull [] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
 			"November", "December" };
+	
 	HashMap<String, Integer> months = new HashMap<>();
 	{
-		for (int i = 0; i < 12; i++)
-			months.put(month_names[i], i);
+		for (int i = 0; i < 12; i++) {
+			@SuppressWarnings("null")
+			@NonNull String n = month_names[i]; // why does this warn?
+			months.put(n, i);
+		}
 	}
 
 	protected Main(String[] args) {
 		this.args = args;
 		pubs = new HashMap<String, Publication>();
+		bibFile = "";
 		ExtInfo pub_access = new PubInfo(pubs, new GetPubCtxt() {
 			public Namespace get(Publication p) { return getPubCtxt(p); }
 		});
 		t2h = new Tex2HTML(pub_access);
+		db = Maybe.none();
+		parseArgs();
+		addEnvMacros();
 	}
 
 	protected static void usage() {
@@ -137,18 +147,13 @@ public class Main {
 	}
 
 	protected void run() {
-		parseArgs();
-		addEnvMacros();
-
 		try {
-			input = new Scanner(new FileReader(inputFile), inputFile);
-			try {
-				runScript(input);
-			} finally {
-				input.close();
-			}
-		} catch (FileNotFoundException e) {
-			System.err.println("File not found: " + inputFile);
+			Scanner input = new Scanner(inputFile);
+			runScript(input);
+			input.close();
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		} catch (IOException e) {
 			System.err.println("IO Exception in " + inputFile + ": " + e.getMessage());
 		}
@@ -165,6 +170,7 @@ public class Main {
 
 	
 	private void readPublications(Scanner sc) {
+		assert db.hasValue();
 		boolean multiline = isMultilineValue(sc);
 		if (!multiline) {
 			out.println("Publication list must use braces ({}) at " + sc.location());
@@ -173,7 +179,7 @@ public class Main {
 		while (!rhsClosed(sc, multiline)) {
 			String pubname = Parsing.parseAttribute(sc);
 			try {
-				Publication p = new Publication(pubname, sc, db);
+				Publication p = new Publication(pubname, sc, db.get());
 				pubs.put(pubname,  p);
 			} catch (ParseError e) {
 				out.println("Parse error " + e.getMessage() + " at " + sc.location());
@@ -203,24 +209,26 @@ public class Main {
 				return;
 			}
 			try {
-				db = parser.parseFully(new FileReader(expand(bibFile)));
+				@SuppressWarnings("null")
+				@NonNull BibTeXDatabase b = parser.parseFully(new FileReader(expand(bibFile)));
+				db = Maybe.some(b);
 			} catch (IOException e) {
 				System.err.println("IO exception parsing bib file at " + sc.location());
 			}
-			if (db != null)
-				out.println("Found " + db.getObjects().size()
-					+ " objects in BibTeX file.");
+			
+			db.ifsome((BibTeXDatabase db2) ->
+				{ out.println("Found " + db2.getObjects().size() + " objects in BibTeX file.");});
 			break;
 		case "pubs":
-			if (db == null) {
-				out.println("Warning: should read the bib file before reading the 'pubs' list at "
-						+ sc.location());
-				return;
-			}
-			readPublications(sc);
+			db.if_(db1 -> {
+				readPublications(sc);
 
-			System.out.println("Found " + pubs.size()
-					+ " publications in script.");
+				System.out.println("Found " + pubs.size()
+				+ " publications in script.");
+				return;
+			},
+			() -> out.println("Warning: should read the bib file before reading the 'pubs' list at "
+					+ sc.location()));
 			break;
 		case "generate":
 			generated = true;
@@ -261,7 +269,7 @@ public class Main {
 		}
 	}
 
-	protected String expand(String s) {
+	protected String expand(@Nullable String s) {
 		if (s == null)
 			return "";
 		return expand(s, false);
