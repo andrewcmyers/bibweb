@@ -237,8 +237,10 @@ public class Main {
 		case "include":
 			Reader r = null;
 			File inpf = new File(inputFile);
-			String fname = Parsing.parseValue(sc);
-			File inc = new File(inpf.getParent(), fname);
+			String fname = expand(Parsing.parseValue(sc));
+			File inc = inpf.isAbsolute()
+					? new File(fname)
+					: new File(inpf.getParent(), fname);
 			try {
 				r = new FileReader(inc);
 				sc.includeSource(r, fname);
@@ -261,7 +263,8 @@ public class Main {
 		w.print(expand("\\footer"));
 	}
 
-	protected String expand(String s, boolean b) {
+	protected String expand(@Nullable String s, boolean b) {
+		if (s == null) return "";
 		try {
 			return t2h.convert(s, b);
 		} catch (T2HErr e) {

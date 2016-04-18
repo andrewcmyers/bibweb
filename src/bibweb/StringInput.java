@@ -2,20 +2,32 @@ package bibweb;
 
 import java.util.NoSuchElementException;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 public class StringInput implements Input {
 
-	StringChunk first; // may be null if no more input
+	@Nullable StringChunk first; // may be null if no more input
 	int depth = 1;
 
 	static class StringChunk {
 		String data;
 		int cur; // invariant: 0 <= cur < data.length
-		StringChunk next; // may be null
+		@Nullable StringChunk next;
 		
+		public StringChunk(String d, int c) {
+			this(d, 0, null);
+		}
+		public StringChunk(String d, int c, @Nullable StringChunk n) {
+			data = d;
+			cur = 0;
+			next = n;
+		}
+	
 		boolean invariant() {
 			return 0 <= cur && cur < data.length();
 		}
 
+		@SuppressWarnings("null")
 		public String firstn(int n) {
 			assert invariant();
 			StringBuilder s = new StringBuilder();
@@ -34,20 +46,20 @@ public class StringInput implements Input {
 	}
 
 	StringInput(String s) {
-		first = new StringChunk();
+
 		if (s.length() > 0) {
-			first.data = s;
-			first.cur = 0;
-			first.next = null;
+			first = new StringChunk(s, 0);
 		} else {
 			first = null;
 		}
 	}
 
 	public String toString() {
-		if (first == null)
+		StringChunk f = first;
+		if (f == null)
 			return "\"\"";
-		return "input/\"" + first.firstn(80) + "\"";
+		else
+			return "input/\"" + f.firstn(80) + "\"";
 	}
 
 	@Override
@@ -59,34 +71,32 @@ public class StringInput implements Input {
 
 	@Override
 	public char next() throws NoSuchElementException {
-		assert first == null || first.invariant();
-		if (first == null)
+		StringChunk f = first;
+		assert f == null || f.invariant();
+		if (f == null)
 			throw empty;
-		char result = first.data.charAt(first.cur);
-		first.cur++;
-		if (first.cur == first.data.length()) {
-			first = first.next;
+		char result = f.data.charAt(f.cur);
+		f.cur++;
+		if (f.cur == f.data.length()) {
+			first = f = f.next;
 			depth--;
 		}
-		assert first == null || first.invariant();
+		assert f == null || f.invariant();
 		return result;
 	}
 
 	@Override
 	public char peek() throws NoSuchElementException {
-		if (first == null)
+		StringChunk f = first;
+		if (f == null)
 			throw empty;
-		return first.data.charAt(first.cur);
+		return f.data.charAt(f.cur);
 	}
 
 	@Override
 	public void push(String s) {
 		if (s.length() == 0) return;
-		StringChunk c = new StringChunk();
-		c.next = first;
-		c.cur = 0;
-		c.data = s;
-		first = c;
+		first = new StringChunk(s, 0, first);
 		depth++;
 		if (depth > 20) throw new Error("recursively expanding too much");
 	}

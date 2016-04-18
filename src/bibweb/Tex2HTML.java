@@ -126,6 +126,7 @@ public class Tex2HTML {
 							ret.append("\r\n");
 							state = State.Whitespace;
 						}
+						break;
 					default:
 						if (Character.isAlphabetic(c) && sentence_case
 								&& bracedepth == 0 && state != State.Start) {
@@ -180,6 +181,7 @@ public class Tex2HTML {
 					break;
 				case AlphMacroName:
 					if (Character.isAlphabetic(c)) {
+						assert macro_name != null;
 						macro_name.append(c);
 						// stay in state
 					} else if (c == '{') {
@@ -193,6 +195,7 @@ public class Tex2HTML {
 					} else {
 						if (c != eof)
 							inp.push(Character.toString(c));
+						assert macro_name != null;
 						String name = macro_name.toString();
 						if (special_macros.contains(name)) {
 							throw new T2HErr("Unexpected character \'" + c
@@ -206,6 +209,7 @@ public class Tex2HTML {
 					break;
 				case LongMacroArg: // in middle of argument held in braces
 					if (c == '{') {
+						assert cur_arg != null;
 						cur_arg.append(c);
 						bracedepth++;
 						if (showbraces) System.out.println("incrementing brace depth in macro (2) to " + bracedepth + " at " + inp);
@@ -216,14 +220,17 @@ public class Tex2HTML {
 						assert bracedepth >= macrodepth;
 						if (bracedepth == macrodepth) {
 							state = State.FullMacro;
+							assert macro_args != null && cur_arg != null;
 							macro_args.add(cur_arg.toString());
 						} else {
+							assert cur_arg != null;
 							cur_arg.append(c);
 						}
 						// else stay in state
 					} else if (c == eof) {
 						throw new T2HErr("unexpected end to macro argument.");
 					} else {
+						assert cur_arg != null;
 						cur_arg.append(c);
 						// stay in state
 					}
@@ -235,6 +242,7 @@ public class Tex2HTML {
 						state = State.LongMacroArg;
 						cur_arg = new StringBuilder();
 					} else {
+						assert macro_name != null && macro_args != null;
 						String name = macro_name.toString();
 						inp.push(Character.toString(c));
 						if (special_macros.contains(name)) {
@@ -251,6 +259,7 @@ public class Tex2HTML {
 						bracedepth = 1;
 						cur_arg = new StringBuilder();
 					} else if (c == eof) {
+						assert macro_name != null;
 						inp.push(expandMacro(macro_name.toString(),
 								new ArrayList<String>()));
 						state = State.Normal;
@@ -258,6 +267,7 @@ public class Tex2HTML {
 						List<String> args = new ArrayList<String>();
 						args.add(Character.toString(c));
 						cur_arg = new StringBuilder();
+						assert macro_name != null;
 						inp.push(expandMacro(macro_name.toString(), args));
 						state = State.Normal;
 					}

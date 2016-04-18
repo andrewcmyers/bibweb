@@ -5,7 +5,7 @@ import java.util.Map;
 import bibweb.Namespace.LookupFailure;
 
 public class PubInfo implements ExtInfo {
-	Map<Publication, Namespace> pub_ns;
+//	Map<Publication, Namespace> pub_ns;
 	Map<String, Publication> pubs;
 	GetPubCtxt getPubCtxt;
 	
@@ -14,6 +14,7 @@ public class PubInfo implements ExtInfo {
 	}
 	
 	public PubInfo(Map<String, Publication> pubs, GetPubCtxt pubCtxt) {
+//		pub_ns = new HashMap<>();
 		this.pubs = pubs;
 		this.getPubCtxt = pubCtxt;
 	}

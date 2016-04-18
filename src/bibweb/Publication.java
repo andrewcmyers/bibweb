@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.Key;
@@ -30,7 +31,7 @@ public class Publication {
 	protected Key bibkey;
 	protected ArrayList<String> topics;
 	protected Map<String, String> defns = new HashMap<>();
-	protected Namespace bindings;
+//	protected Namespace bindings;
 	protected BibTeXDatabase db;
 
 	Publication(String k, Scanner sc, BibTeXDatabase db) throws ParseError {
@@ -72,6 +73,7 @@ public class Publication {
 		return db.getEntries().get(bibkey);
 	}
 
+	@Nullable
 	String field(String override, Key k) {
 		if (defns.containsKey(override)) return defns.get(override);
 		BibTeXEntry entry = entry();
@@ -82,19 +84,19 @@ public class Publication {
 		return v.toUserString();
 	}
 
-	String title() {
+	@Nullable String title() {
 		return field("title", BibTeXEntry.KEY_TITLE);
 	}
 
-	String author() {
+	@Nullable String author() {
 		return field("authors", BibTeXEntry.KEY_AUTHOR);
 	}
 
-	String url() {
+	@Nullable String url() {
 		return field("url", BibTeXEntry.KEY_URL);
 	}
 
-	String pages() {
+	@Nullable String pages() {
 		String pp = field("pages", BibTeXEntry.KEY_PAGES);
 		if (pp == null)
 			return null;
@@ -104,7 +106,7 @@ public class Publication {
 
 	static Key KEY_venueURL = new Key("venueurl");
 
-	String venueURL() {
+	@Nullable String venueURL() {
 		return field("venueurl", KEY_venueURL);
 	}
 
@@ -115,7 +117,7 @@ public class Publication {
 		else return e.getType().getValue().toLowerCase();
 	}
 
-	String venue() {
+	@Nullable String venue() {
 		switch (pubType()) {
 		case "inproceedings":
 			return field("booktitle", BibTeXEntry.KEY_BOOKTITLE);
@@ -139,7 +141,7 @@ public class Publication {
 		return auths.toArray(new String[0]);
 	}
 
-	public String bibtexYear() {
+	@Nullable public String bibtexYear() {
 		return field("year", BibTeXEntry.KEY_YEAR);
 	}
 	int year() {
@@ -151,7 +153,7 @@ public class Publication {
 		}
 	}
 
-	public String bibtexMonth() {
+	@Nullable public String bibtexMonth() {
 		return field("month", BibTeXEntry.KEY_MONTH);
 	}
 	int month() {
@@ -162,18 +164,18 @@ public class Publication {
 		return 0;
 	}
 	
-	String number() {
+	@Nullable String number() {
 		return field("number", BibTeXEntry.KEY_NUMBER);
 	}
-	String volume() {
+	@Nullable String volume() {
 		return field("volume", BibTeXEntry.KEY_VOLUME);
 	}
 
-	public String institution() {
+	@Nullable public String institution() {
 		return field("institution", BibTeXEntry.KEY_INSTITUTION);
 	}
 
-	public String school() {
+	@Nullable public String school() {
 		return field("school", BibTeXEntry.KEY_SCHOOL);
 	}
 }
