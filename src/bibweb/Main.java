@@ -39,8 +39,8 @@ import easyIO.Scanner;
 import easyIO.UnexpectedInput;
 
 public class Main {
-	protected String[] args;
-	@Nullable protected String inputFile;
+	protected String @NonNull [] args;
+    protected Maybe<String> inputFile;
 	protected Maybe<BibTeXDatabase> db;
 	protected HashMap<String, Publication> pubs;
 	/** Records the generated namespace for each publication. */
@@ -49,13 +49,12 @@ public class Main {
 	protected String bibFile;
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
-	
 
 	public static final String @NonNull [] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
 			"November", "December" };
 	
-	HashMap<String, Integer> months = new HashMap<>();
+	final HashMap<String, Integer> months = new HashMap<>();
 	{
 		for (int i = 0; i < 12; i++) {
 			@SuppressWarnings("null")
@@ -73,6 +72,7 @@ public class Main {
 		});
 		t2h = new Tex2HTML(pub_access);
 		db = Maybe.none();
+		inputFile = Maybe.none();
 		parseArgs();
 		addEnvMacros();
 	}
@@ -98,7 +98,8 @@ public class Main {
 			dumpDefns();
 			System.exit(0);
 		} else {
-			inputFile = args[0];
+			String a = args[0];
+			inputFile = a == null ? Maybe.none() : Maybe.some(a);
 		}
 	}
 	final String[] usage_msg = {
@@ -148,12 +149,11 @@ public class Main {
 
 	protected void run() {
 		try {
-			Scanner input = new Scanner(inputFile);
+			Scanner input = new Scanner(inputFile.get());
 			runScript(input);
 			input.close();
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			System.err.println("File not found: " + inputFile);
 		} catch (IOException e) {
 			System.err.println("IO Exception in " + inputFile + ": " + e.getMessage());
 		}
@@ -236,7 +236,7 @@ public class Main {
 			break;
 		case "include":
 			Reader r = null;
-			File inpf = new File(inputFile);
+			File inpf = new File(inputFile.get());
 			String fname = expand(Parsing.parseValue(sc));
 			File inc = inpf.isAbsolute()
 					? new File(fname)
@@ -492,7 +492,7 @@ public class Main {
 		}
 	}
 
-	protected Comparator<Publication> byYear = new Comparator<Publication>() {
+	static final protected Comparator<Publication> byYear = new Comparator<Publication>() {
 		@Override
 		public int compare(Publication o1, Publication o2) {
 			return (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
