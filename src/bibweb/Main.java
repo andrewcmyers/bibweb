@@ -67,14 +67,7 @@ public class Main {
 		this.args = args;
 		pubs = new HashMap<String, Publication>();
 		bibFile = "";
-		ExtInfo pub_access = new PubInfo(pubs, new GetPubCtxt() {
-			@Override public Namespace get(Publication p) {
-				PubContext c = new PubContext(p);
-
-				return c;
-			}
-
-		});
+		ExtInfo pub_access = new PubInfo(pubs, p -> new PubContext(p));
 		t2h = new Tex2HTML(pub_access);
 		db = Maybe.none();
 		inputFile = Maybe.none();
@@ -224,7 +217,7 @@ public class Main {
 				System.err.println("IO exception parsing bib file at " + sc.location());
 			}
 			
-			db.ifsome((BibTeXDatabase db2) ->
+			db.ifsome(db2 ->
 				{ out.println("Found " + db2.getObjects().size() + " objects in BibTeX file.");});
 			break;
 		case "pubs":
@@ -348,36 +341,24 @@ public class Main {
 	protected Filter createFilter(final String selector, final String value) {
 		switch (selector) {
 		case "pubtype":
-			return new Filter() {
-				public boolean select(Publication p) {
-					return p.pubType().equals(value);
-				}
-			};
+			return (p -> p.pubType().equals(value));
 		case "topic":
-			return new Filter() {
-				public boolean select(Publication p) {
-					return p.topics.contains(value);
-				}
-			};
+			return (p -> p.topics.contains(value));
 		case "author":
-			return new Filter() {
-				public boolean select(Publication p) {
+			return (p-> {
 					for (String a : p.authors()) {
 						if (a.equals(value))
 							return true;
 					}
 					return false;
-				}
-			};
+				});
 		case "all":
 			return new AllFilter();
 		default: // general selection on an attribute
-			return new Filter() {
-				public boolean select(Publication p) {
+			return (p -> {
 					String v = p.field(selector, new Key(selector));
 					return (v != null && value.equals(v));
-				}
-			};
+				});
 		}
 	}
 
@@ -500,13 +481,10 @@ public class Main {
 		}
 	}
 
-	static final protected Comparator<Publication> byYear = new Comparator<Publication>() {
-		@Override
-		public int compare(Publication o1, Publication o2) {
-			return (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
-		}
-	};
+	static final protected Comparator<Publication> byYear = (o1, o2) ->
+			 (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
 
+	/** HTML description of where a publication was published. */
 	protected String wherePublished(Publication p) {
 		StringBuilder b = new StringBuilder();
 		switch (p.pubType()) {
@@ -594,12 +572,10 @@ public class Main {
 		return b.toString();
 	}
 	
-	// A namespace containing various
-	// attributes of a publication in string form. The namespace is cached
-	// for later use.
-	// Note that some attributes come "directly" from the publication, but
-	// these are numeric attributes.
-
+	// A namespace containing various derived attributes of a publication in
+	// string form. The namespace is cached for later use, and regenerated if
+	// the underlying publication changes. Note that some attributes come
+	// "directly" from the publication, but these are numeric attributes.
 	class PubContext implements Namespace {
 		Publication pub;
 		Namespace context = new Context();
