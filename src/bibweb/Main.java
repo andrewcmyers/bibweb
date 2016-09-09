@@ -31,7 +31,6 @@ import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
 import bibweb.Parsing.ParseError;
-import bibweb.PubInfo.GetPubCtxt;
 import bibweb.Tex2HTML.T2HErr;
 import easyIO.Recognizer;
 import easyIO.Regex;
@@ -57,8 +56,7 @@ public class Main {
 	final HashMap<String, Integer> months = new HashMap<>();
 	{
 		for (int i = 0; i < 12; i++) {
-			@SuppressWarnings("null")
-			@NonNull String n = month_names[i]; // why does this warn?
+			String n = month_names[i]; // why does this warn?
 			months.put(n, i);
 		}
 	}
@@ -210,8 +208,9 @@ public class Main {
 				return;
 			}
 			try {
-				@SuppressWarnings("null")
-				@NonNull BibTeXDatabase b = parser.parseFully(new FileReader(expand(bibFile)));
+				Reader r = new FileReader(expand(bibFile));
+				BibTeXDatabase b = parser.parseFully(r);
+				r.close();
 				db = Maybe.some(b);
 			} catch (IOException e) {
 				System.err.println("IO exception parsing bib file at " + sc.location());

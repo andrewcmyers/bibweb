@@ -27,7 +27,6 @@ public class StringInput implements Input {
 			return 0 <= cur && cur < data.length();
 		}
 
-		@SuppressWarnings("null")
 		public String firstn(int n) {
 			assert invariant();
 			StringBuilder s = new StringBuilder();
