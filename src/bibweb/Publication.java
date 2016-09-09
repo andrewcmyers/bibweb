@@ -11,9 +11,12 @@ import static easyIO.Regex.whitespace;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -25,13 +28,16 @@ import easyIO.Recognizer;
 import easyIO.Scanner;
 
 // A publication. Typically parsed from the input file and overlaid with information
-// from the script.
+// from a bibweb script.
 public class Publication {
 	protected String key;
 	protected Key bibkey;
 	protected ArrayList<String> topics;
+	
+	/** Additional definitions overlaid by the script.*/
 	protected Map<String, String> defns = new HashMap<>();
-//	protected Namespace bindings;
+
+	/** Contents of the .bib file */
 	protected BibTeXDatabase db;
 
 	Publication(String k, Scanner sc, BibTeXDatabase db) throws ParseError {
@@ -177,5 +183,25 @@ public class Publication {
 
 	@Nullable public String school() {
 		return field("school", BibTeXEntry.KEY_SCHOOL);
+	}
+	
+	interface Observer {
+		public void update(Publication p);
+	}
+	
+	Collection<Observer> observers = new LinkedList<Observer>();
+	
+	void registerObserver(Observer o) {
+		observers.add(o);
+	}
+	void notifyObservers() {
+		for (Observer o : observers) {
+			o.update(this);
+		}
+	}
+
+	public void put(String k, String value) {
+		defns.put(k, value);
+		notifyObservers();
 	}
 }

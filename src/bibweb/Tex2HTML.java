@@ -55,6 +55,7 @@ public class Tex2HTML {
 		special_macros.add("ifeq");
 		special_macros.add("ifne");
 		special_macros.add("pubinfo");
+		special_macros.add("setpubinfo");
 		special_macros.add("def");
 		special_macros.add("depth");
 	}
@@ -296,7 +297,7 @@ public class Tex2HTML {
 		switch (name) {
 		case "ifdef":
 		case "ifndef":
-			if (args.size() != 2) throw new T2HErr("\\ifdef and \\ifndef expect 2 arguments");
+			if (args.size() != 2) throw new T2HErr("\\ifdef and \\ifndef expect 2 arguments (not " + args.size() + ")");
 			String n = args.get(0);
 			if (n.charAt(0) == '\\') n = n.substring(1);
 			if (inScope(n) == name.equals("ifdef"))
@@ -304,19 +305,30 @@ public class Tex2HTML {
 			break;
 		case "ifeq":
 		case "ifne":
-			if (args.size() != 3) throw new T2HErr("\\ifeq and \\ifne expect 3 arguments");
+			if (args.size() != 3) throw new T2HErr("\\ifeq and \\ifne expect 3 arguments (not " + args.size() + ")");
 			String e1 = convert(args.get(0), false),
 					e2 = convert(args.get(1), false);
 			if (e1.equals(e2) == name.equals("ifeq"))
 				inp.push(args.get(2));
 			break;
-		case "pubinfo":
-			if (args.size() != 2) throw new T2HErr("Usage: \\pubinfo{key}{field}");
+		case "pubinfo": {
+			if (args.size() != 2) throw new T2HErr("Usage: \\pubinfo{key}{field} (saw " + args.size() + "args)");
 
 			String key = convert(args.get(0), false);
 			String field = convert(args.get(1), false);
 			try { inp.push(ext_info.lookup(key, field)); } catch (LookupFailure e) {}
 			break;
+		}
+		case "setpubinfo": {
+			if (args.size() != 3) throw new T2HErr("Usage: \\setpubinfo{key}{field}{value} (saw " + args.size() + "args)");
+			String key = convert(args.get(0), false);
+			String field = convert(args.get(1), false);
+			String value = convert(args.get(2), false);
+			try { ext_info.put(key, field, value); } catch (LookupFailure e) {
+				throw new Error("Cannot set field " + field + " of nonexistent publication " + key);
+			}
+			break;
+		}
 		case "def":
 			if (args.size() != 2) throw new T2HErr("Usage: \\def{macro}{expansion}");
 			context.add(args.get(0), args.get(1));

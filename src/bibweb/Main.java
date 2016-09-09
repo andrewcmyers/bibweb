@@ -68,7 +68,12 @@ public class Main {
 		pubs = new HashMap<String, Publication>();
 		bibFile = "";
 		ExtInfo pub_access = new PubInfo(pubs, new GetPubCtxt() {
-			public Namespace get(Publication p) { return getPubCtxt(p); }
+			@Override public Namespace get(Publication p) {
+				PubContext c = new PubContext(p);
+
+				return c;
+			}
+
 		});
 		t2h = new Tex2HTML(pub_access);
 		db = Maybe.none();
@@ -589,43 +594,69 @@ public class Main {
 		return b.toString();
 	}
 	
-	protected Namespace getPubCtxt(Publication p) {
-		if (pub_defns.containsKey(p)) {
-			assert pub_defns.get(p) != null;
-			return pub_defns.get(p);
+	// A namespace containing various
+	// attributes of a publication in string form. The namespace is cached
+	// for later use.
+	// Note that some attributes come "directly" from the publication, but
+	// these are numeric attributes.
+
+	class PubContext implements Namespace {
+		Publication pub;
+		Namespace context = new Context();
+		
+		public PubContext(Publication p) {
+			pub = p;
+			if (pub_defns.containsKey(p)) {
+				assert pub_defns.get(p) != null;
+				context = pub_defns.get(p);
+				return;
+			}
+			init(p);
+			pub_defns.put(p, context);
+			pub.registerObserver(pub2 -> refresh());
+		}
+		
+		public void refresh() {
+			init(pub);
+			pub_defns.put(pub, context);
+		}
+		
+		void init(Publication p) {
+			String where_published = wherePublished(p);
+			String authors = formattedAuthors(p);
+			
+			Context ctxt = new Context();
+			if (p.title() != null) ctxt.add("title", expand(p.title(), true));
+			else ctxt.add("title", "<em>No title</em>");
+			ctxt.add("wherepublished", where_published);
+			ctxt.add("authors", authors);
+			if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
+			ctxt.add("pubtype", p.pubType());
+			if (p.url() != null) ctxt.add("paperurl", p.url());
+			ctxt.add("venue", p.venue());
+			ctxt.add("key", p.key);
+			ctxt.add("year", p.bibtexYear());
+			if (p.institution() != null) ctxt.add("institution", p.institution());
+			if (p.volume() != null) ctxt.add("volume", p.volume());
+			if (p.number() != null) ctxt.add("number", p.number());
+			
+			if (p.bibtexMonth() != null)
+				ctxt.add("month", p.bibtexMonth());
+			if (p.pages() != null)
+				ctxt.add("pages", p.pages());
+			for (String name : p.defns.keySet()) {
+				ctxt.add(name, p.defns.get(name));
+			}
+			context = ctxt;	
 		}
 
-		String where_published = wherePublished(p);
-		String authors = formattedAuthors(p);
-		
-		Context ctxt = new Context();
-		if (p.title() != null) ctxt.add("title", expand(p.title(), true));
-		else ctxt.add("title", "<em>No title</em>");
-		ctxt.add("wherepublished", where_published);
-		ctxt.add("authors", authors);
-		if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
-		ctxt.add("pubtype", p.pubType());
-		if (p.url() != null) ctxt.add("paperurl", p.url());
-		ctxt.add("venue", p.venue());
-		ctxt.add("key", p.key);
-		ctxt.add("year", p.bibtexYear());
-		if (p.institution() != null) ctxt.add("institution", p.institution());
-		if (p.volume() != null) ctxt.add("volume", p.volume());
-		if (p.number() != null) ctxt.add("number", p.number());
-		
-		if (p.bibtexMonth() != null)
-			ctxt.add("month", p.bibtexMonth());
-		if (p.pages() != null)
-			ctxt.add("pages", p.pages());
-		for (String name : p.defns.keySet()) {
-			ctxt.add(name,  p.defns.get(name));
+		@Override public String lookup(String name) throws LookupFailure {
+			return context.lookup(name);
 		}
-		pub_defns.put(p,  ctxt);
-		return ctxt;
 	}
 
 	protected void generatePub(Publication p, PrintWriter w) {
-		t2h.push(getPubCtxt(p));
+		t2h.push(new PubContext(p));
 		try {
 			w.println(expand("\\pubformat"));
 		} finally {

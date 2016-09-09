@@ -64,6 +64,7 @@ public class BuiltinMacros {
 	    { "\\ifeq", "(insert third argument if first two are equal)"},
 	    { "\\ifne", "(insert third argument if first two are not equal)"},
 	    { "\\pubinfo", "(\\pubinfo{key}{attribute} looks up an attribute of publication with the given key)"},
+	    { "\\setpubinfo", "(\\pubinfo{key}{attribute}{val} redefines an attribute of publication with the given key)"},
 	    { "\\def", "(\\def{name}{expansion} defines a new macro. Arguments can be named as #1, #2, etc. in expansion"}
 	};
 }

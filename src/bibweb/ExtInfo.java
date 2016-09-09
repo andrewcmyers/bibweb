@@ -7,4 +7,6 @@ import bibweb.Namespace.LookupFailure;
  */
 public interface ExtInfo {
 	String lookup(String key, String field) throws LookupFailure;
+	
+	void put(String key, String field, String value) throws LookupFailure;
 }
