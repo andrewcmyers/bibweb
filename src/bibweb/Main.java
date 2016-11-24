@@ -69,8 +69,8 @@ public class Main {
 		t2h = new Tex2HTML(pub_access);
 		db = Maybe.none();
 		inputFile = Maybe.none();
-		parseArgs();
 		addEnvMacros();
+		parseArgs();
 	}
 
 	protected static void usage() {
