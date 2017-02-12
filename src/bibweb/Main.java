@@ -111,9 +111,11 @@ public class Main {
 			"    output: <output.html>   % specify HTML output destination",
 			"    section: <subcommands>  % create a list of publications",
 			"    select: <selectors>     % choose publications for current section",
-			"     author: <name>         % choose pubs by author",
-			"     pubtype: <type>        % choose pubs by type, e.g., 'inproceedings'",
-			"     topic: <type>          % choose pubs by topic",
+			"      author: <name>        % choose pubs by author",
+			"      pubtype: <type>       % choose pubs by type, e.g., 'inproceedings'",
+			"      topic: <type>         % choose pubs by topic",
+			"      newer: <pub>          % choose pubs newer than <pub>",
+			"      <attr>: <value>       % select on other paper attribute",
 			"",
 			"Multiline commands and definitions use open brace ({) instead of a colon (:)",
 			"  and are closed by a closing brace on a line by itself.",
@@ -351,6 +353,13 @@ public class Main {
 					}
 					return false;
 				});
+		case "newer":
+			Publication pv = pubs.get(value);
+			if (pv == null) {
+				System.err.println("Can't find publication in `newer`: " + value);
+				return new AllFilter();
+			}
+			return p -> (compareDates(pv, p) <= 0);
 		case "all":
 			return new AllFilter();
 		default: // general selection on an attribute
@@ -359,6 +368,14 @@ public class Main {
 					return (v != null && value.equals(v));
 				});
 		}
+	}
+	
+	static int compareDates(Publication p1, Publication p2) {
+		int y1 = p1.year(), y2 = p2.year();
+		if (y1 < y2) return -1;
+		if (y1 > y2) return 1;
+		int m1 = p1.month(), m2 = p2.month();
+		return m1 - m2;
 	}
 
 	protected void generate(Scanner sc) {
