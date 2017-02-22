@@ -1,5 +1,6 @@
 # bibweb
-HTML bibliography generator that can read from BibTeX input files.
+Formatted bibliography generator that can read from BibTeX input files but also overlays additional information
+from an auxiliary input file and supports user-defined macros ala TeX.
 
 To parse BibTeX, uses the jbibtex package (https://github.com/jbibtex/jbibtex).
 
