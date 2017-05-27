@@ -372,10 +372,8 @@ public class Main {
 	
 	static int compareDates(Publication p1, Publication p2) {
 		int y1 = p1.year(), y2 = p2.year();
-		if (y1 < y2) return -1;
-		if (y1 > y2) return 1;
-		int m1 = p1.month(), m2 = p2.month();
-		return m1 - m2;
+		if (y1 == y2) return p1.month() - p2.month();
+		return y1 - y2;
 	}
 
 	protected void generate(Scanner sc) {
