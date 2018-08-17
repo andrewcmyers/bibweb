@@ -4,12 +4,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 public class Maybe<T> {
 	private static class Some<T> extends Maybe<T> {
 		T value;
-		Some(@NonNull T v) { value = v; }
+		Some(T v) { value = v; }
 		public T get() { return value; }
 		public boolean hasValue() { return true; }
 	}
@@ -20,7 +18,7 @@ public class Maybe<T> {
 	public static <T> Maybe<T> none() {
 		return (Maybe<T>) none;
 	}
-	public static <T> Maybe<T> some(@NonNull T x) {
+	public static <T> Maybe<T> some(T x) {
 		return new Some<T>(x);
 	}
 	public T get() {

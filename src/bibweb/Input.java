@@ -2,8 +2,6 @@ package bibweb;
 
 import java.util.NoSuchElementException;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /** An input stream of characters that allows new strings of
  *  characters to be pushed into the head of the input.
  */
@@ -19,5 +17,5 @@ interface Input {
 	char peek() throws NoSuchElementException;
 
 	/** Put all the characters in s at the head of the input stream. */
-	void push(@NonNull String s);
+	void push(String s);
 }

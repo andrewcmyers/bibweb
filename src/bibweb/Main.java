@@ -21,8 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
 import org.jbibtex.BibTeXParser;
@@ -38,7 +36,7 @@ import easyIO.Scanner;
 import easyIO.UnexpectedInput;
 
 public class Main {
-	protected String @NonNull [] args;
+	protected String [] args;
     protected Maybe<String> inputFile;
 	protected Maybe<BibTeXDatabase> db;
 	protected HashMap<String, Publication> pubs;
@@ -49,7 +47,9 @@ public class Main {
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
 
-	public static final String @NonNull [] month_names = { "January", "February", "March",
+    public static final String VERSION = "1.05"; 
+
+	public static final String [] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
 			"November", "December" };
 	
@@ -74,6 +74,7 @@ public class Main {
 	}
 
 	protected static void usage() {
+		System.err.println("bibweb version " + VERSION);
 		System.err.println("Usage: bibweb [--help | --defns | <script-file> ]");
 	}
 
@@ -265,16 +266,18 @@ public class Main {
 		w.print(expand("\\footer"));
 	}
 
-	protected String expand(@Nullable String s, boolean b) {
+    /** s can be null. */
+	protected String expand(String s, boolean b) {
 		if (s == null) return "";
 		try {
 			return t2h.convert(s, b);
 		} catch (T2HErr e) {
-			return "HTML conversion failed on " + s + " : " + e.getMessage();
+            System.err.println("HTML conversion failed on " + s + " : " + e.getMessage());
+            return "";
 		}
 	}
 
-	protected String expand(@Nullable String s) {
+	protected String expand(String s) {
 		if (s == null)
 			return "";
 		return expand(s, false);

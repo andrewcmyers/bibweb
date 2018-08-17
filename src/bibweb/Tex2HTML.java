@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jdt.annotation.Nullable;
 
 import bibweb.Namespace.LookupFailure;
 
@@ -31,7 +30,7 @@ public class Tex2HTML {
 		context.pop();
 	}
 
-	public void addMacro(String from, @Nullable String to) {
+	public void addMacro(String from, String to) {
 		if (to != null)
 		context.add(from, to);
 	}
@@ -153,7 +152,7 @@ public class Tex2HTML {
 						ret.append('\\');
 						state = (c == eof) ? State.EOF : State.Normal;
 						break;
-					case '{':
+					case '{': // using backslash for verbatim chars
 					case '}':
 					case '-':
 					case '&':
@@ -162,12 +161,15 @@ public class Tex2HTML {
 						ret.append(c);
 						state = State.Normal;
 						break;
-					case '\'':
+					case '\'': // one-char macros
 					case '"':
 						macro_name = new StringBuilder();
 						macro_name.append(c);
 						state = State.ShortMacroArg;
 						break;
+					case '@': // ignore
+                        state = State.Normal;
+                        break;
 					default:
 						if (Character.isAlphabetic(c)) {
 							macro_name = new StringBuilder();

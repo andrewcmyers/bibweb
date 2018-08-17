@@ -10,6 +10,7 @@ public class BuiltinMacros {
 		{ "\"a", "&auml;" },
 		{ "\\{", "{" },
 		{ "\\}", "}" },
+		{ "@", "" },
 		{ "--", "&ndash;" },
 		{ "---", "&mdash;" },
 		{ "~", "&nbsp;" },
