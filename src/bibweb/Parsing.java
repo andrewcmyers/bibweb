@@ -94,8 +94,8 @@ public class Parsing {
 			sc.eol();
 			String result = sc.getToken();
 			sc.accept();
-			// sc.advance(); // don't go past the newline; might be needed to
-			// close out a higher-level single-line attribute
+			// don't advance past the newline; it might be needed to
+			// close out a higher-level single-line attribute.
 			return result;
 		}
 		StringBuilder b = new StringBuilder();

@@ -386,7 +386,7 @@ public class Main {
 		PrintWriter w = null;
 		boolean sections = false;
 		boolean header = false;
-		boolean multiline = Parsing.isMultilineValue(sc);
+		boolean multiline = isMultilineValue(sc);
 		if (!multiline) {
 			System.out.println("generate command requires braces {} : " + sc.location());
 			return;
@@ -452,11 +452,12 @@ public class Main {
 		t2h.push();
 		boolean any_select = false;
 		boolean multiline = isMultilineValue(sc);
+        Comparator<Publication> order = byYear;
 		
 		try {
 			while (!rhsClosed(sc, multiline)) {
 				String attribute = Parsing.parseAttribute(sc);
-				
+
 				switch (attribute) {
 				case "select":
 					any_select = true;
@@ -476,6 +477,14 @@ public class Main {
 						selected.add(p);
 					}
 					break;
+                case "sort":
+                    try {
+                        sc.whitespace(); sc.consume(":"); sc.whitespace();
+                    } catch (UnexpectedInput uinp) {
+                        throw new ParseError("Expected sort key " + sc.location());
+                    }
+                    order = parseOrder(sc);
+                    break;
 				default:
 					t2h.addMacro(attribute, Parsing.parseValue(sc));
 					break;
@@ -485,7 +494,7 @@ public class Main {
 				selected = pubs.values();
 			
 			Publication[] pa = selected.toArray(new Publication[0]);
-			Arrays.sort(pa, byYear);
+			Arrays.sort(pa, order);
 
 			w.println(expand("\\intro"));
 			w.println(expand("\\openpaperlist"));
@@ -500,6 +509,40 @@ public class Main {
 
 	static final protected Comparator<Publication> byYear = (o1, o2) ->
 			 (o2.year() - o1.year()) * 12 + (o2.month() - o1.month());
+
+	static final protected Comparator<Publication> byAuthor = (o1, o2) ->
+            o1.author().compareTo(o2.author());
+
+    static final protected Comparator<Publication> reverse(Comparator<Publication> cmp) {
+        return (o1, o2) -> cmp.compare(o2, o1);
+    }
+
+	protected Comparator<Publication> byTitle = (o1, o2) ->
+            expand(o1.title()).compareTo(expand(o2.title()));
+
+    Comparator<Publication> parseOrder(Scanner sc) throws ParseError {
+      sc.whitespace();
+      try {
+        sc.mark();
+        sc.identifier();
+      } catch (UnexpectedInput uinp) {
+        sc.abort();
+        out.println("No sorting key given at " + sc.location());
+        throw new Error();
+      }
+      String key = sc.getToken();
+      sc.accept();
+
+      switch (key) {
+          case "date": return byYear;
+          case "author": return byAuthor;
+          case "title": return byTitle;
+          case "reverse": return reverse(parseOrder(sc));
+          default:
+              out.println("Unrecognized sorting key: " + key);
+              return byYear;
+      }
+    }
 
 	/** HTML description of where a publication was published. */
 	protected String wherePublished(Publication p) {

@@ -37,6 +37,19 @@ public class Scanner extends BacktrackScanner {
 			advance();
 	}
 
+    /** Scan past the specified string. 
+     *  @throws UnexpectedInput if anything other than the expected string is encountered,
+     *    leaving the scanner at the position where an unexpected character is reached.
+     */
+    public void consume(String s) throws UnexpectedInput {
+        for (int i = 0; i < s.length(); i++) {
+            if (!hasNext()) throw uinp;
+            int c = peek();
+            if ((char) c != s.charAt(i)) throw uinp;
+            advance();
+        }
+    }
+
 	/** Scan past and return the next character if it is a digit.*/
 	public char nextDigit() throws UnexpectedInput {
 		int c = peek();
@@ -138,7 +151,8 @@ public class Scanner extends BacktrackScanner {
 		}
 	}
 
-	/** Scan an identifier ala Java. @throws UnexpectedInput if the next characters are*/
+	/** Scan an identifier ala Java.
+        @throws UnexpectedInput if the next characters are not an identifier. */
 	public void identifier() throws UnexpectedInput {
 		int first = peek();
 		if (!Character.isAlphabetic(first) && first != '_')
