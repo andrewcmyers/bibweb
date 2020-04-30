@@ -1,0 +1,3 @@
+[submodule "jbibtex"]
+	path = jbibtex
+	url = https://github.com/jbibtex/jbibtex.git

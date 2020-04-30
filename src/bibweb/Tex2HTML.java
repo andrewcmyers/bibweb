@@ -161,12 +161,16 @@ public class Tex2HTML {
 						ret.append(c);
 						state = State.Normal;
 						break;
+                    case ' ':
+                        ret.append(' ');
+                        break;
 					case '\'': // one-char macros
 					case '"':
 						macro_name = new StringBuilder();
 						macro_name.append(c);
 						state = State.ShortMacroArg;
 						break;
+                    case '/':
 					case '@': // ignore
                         state = State.Normal;
                         break;
