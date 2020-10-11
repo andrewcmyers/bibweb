@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.annotation.Nullable;
-
 /** A namespace that supports pushing and popping other namespaces.
  *  The current namespace can be either immutable or mutable. The initial
  *  state is a single-level mutable namespace to which new bindings can be
@@ -85,7 +83,8 @@ public class Context implements Namespace {
 		nodes.remove(nodes.size()-1);
 	}
 	
-	public void add(String name, @Nullable String defn) {
+    // defn may be null
+	public void add(String name, String defn) {
 		if (defn == null) {
 			System.err.println("Warning: " + name + " bound to null");
 			return;

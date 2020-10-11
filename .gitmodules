@@ -2,5 +2,5 @@
 	path = jbibtex
 	url = https://github.com/jbibtex/jbibtex.git
 [submodule "src/easyIO"]
-	path = src/easyIO
+	path = easyIO
 	url = https://github.coecis.cornell.edu/acm22/easyIO.git

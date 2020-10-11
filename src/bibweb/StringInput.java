@@ -2,22 +2,21 @@ package bibweb;
 
 import java.util.NoSuchElementException;
 
-import org.eclipse.jdt.annotation.Nullable;
-
 public class StringInput implements Input {
 
-	@Nullable StringChunk first; // may be null if no more input
+	StringChunk first; // may be null if no more input
 	int depth = 1;
 
 	static class StringChunk {
 		String data;
 		int cur; // invariant: 0 <= cur < data.length
-		@Nullable StringChunk next;
+		StringChunk next; // may be null
 		
 		public StringChunk(String d, int c) {
 			this(d, 0, null);
 		}
-		public StringChunk(String d, int c, @Nullable StringChunk n) {
+        // n may be null
+		public StringChunk(String d, int c, StringChunk n) {
 			data = d;
 			cur = 0;
 			next = n;

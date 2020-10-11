@@ -47,7 +47,7 @@ public class Main {
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
 
-    public static final String VERSION = "1.05"; 
+    public static final String VERSION = "1.06"; 
 
 	public static final String [] month_names = { "January", "February", "March",
 			"April", "May", "June", "July", "August", "September", "October",
