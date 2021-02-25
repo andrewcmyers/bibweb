@@ -40,7 +40,7 @@ public class BuiltinMacros {
 	    { "pagetitle",       "Publications by \\author" },
 	    { "contenttype", "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"},
 		{ "moremeta",    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" },
-		{ "style",       "  <link href=\"\\stylesheet\" type=\"text/css\" rel=\"stylesheet\" />" },
+		{ "style",       "  <link href=\"\\stylesheet\" type=\"text/css\" rel=\"stylesheet\">" },
 		{ "morestyle",   "" },
 		{ "uri",         "" },
 		{ "urimeta",     "" },
