@@ -14,6 +14,7 @@ $(SUBMODULES):
 	git submodule update --init
 
 jbibtex_build:
+	cd jbibtex && mvn compile
 
 .PHONY: jbibtex_build easyIO_build
 
