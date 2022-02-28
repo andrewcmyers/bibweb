@@ -18,7 +18,7 @@ jbibtex_build:
 
 .PHONY: jbibtex_build easyIO_build
 
-bibweb.jar:
+bibweb.jar:jbibtex_build easyIO_build
 	jar --create --file bibweb.jar -e bibweb.Main -C bin bibweb -C easyIO/bin easyIO -C jbibtex/target/classes org
 
 build: jbibtex_build easyIO_build
