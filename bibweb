@@ -1,8 +1,12 @@
 #!/bin/sh
 root="`dirname $0`"
-if [ -d "$root"/bin ]
+if [ -f "$root"/bibweb.jar ]
 then
-    java -cp "$root"/bin bibweb.Main $*
-else
     java -cp "$root"/bibweb.jar bibweb.Main $*
+elif [ -d "$root"/bin -a -d "$root/easyIO/bin" ]
+then
+    java -cp "$root"/bin:"$root"/easyIO/bin:"$root"/jbibtex/target/classes bibweb.Main $*
+else
+    echo "Don't know where to find bibweb.jar"
+    exit 1
 fi
