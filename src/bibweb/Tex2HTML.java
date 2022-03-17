@@ -166,6 +166,7 @@ public class Tex2HTML {
                         break;
 					case '\'': // one-char macros
 					case '"':
+                    case '^':
 						macro_name = new StringBuilder();
 						macro_name.append(c);
 						state = State.ShortMacroArg;
