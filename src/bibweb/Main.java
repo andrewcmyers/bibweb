@@ -209,14 +209,13 @@ public class Main {
      *  bibtex databases.
      */
     protected void autoImportPubs() {
-        out.println("No pubs block, automatically importing publications\n");
+        out.println("No pubs block, automatically importing publications");
         for (String dbname : dbs.keySet()) {
             out.println("  importing from " + dbname);
             BibTeXDatabase db = dbs.get(dbname);
             for (Key key : db.getEntries().keySet()) {
                 String pubname = key.getValue();
                 BibTeXEntry entry = db.getEntries().get(key);
-                out.println("    " + entry.getKey());
                 entry.getKey().getValue();
                 Publication p = new Publication(pubname, entry);
                 pubs.put(pubname, p);
