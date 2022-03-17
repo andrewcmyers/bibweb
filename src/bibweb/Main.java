@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.NoSuchElementException;
 
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -38,12 +40,11 @@ import easyIO.UnexpectedInput;
 public class Main {
 	protected String [] args;
     protected Maybe<String> inputFile;
-	protected Maybe<BibTeXDatabase> db;
+	protected Map<String, BibTeXDatabase> dbs;
 	protected HashMap<String, Publication> pubs;
 	/** Records the generated namespace for each publication. */
 	Map<Publication, Namespace> pub_defns = new HashMap<>();
 
-	protected String bibFile;
 	protected boolean generated = false;
 	protected Tex2HTML t2h;
 
@@ -64,10 +65,9 @@ public class Main {
 	protected Main(String[] args) {
 		this.args = args;
 		pubs = new HashMap<String, Publication>();
-		bibFile = "";
 		ExtInfo pub_access = new PubInfo(pubs, p -> new PubContext(p));
 		t2h = new Tex2HTML(pub_access);
-		db = Maybe.none();
+		dbs = new HashMap<>();
 		inputFile = Maybe.none();
 		addEnvMacros();
 		parseArgs();
@@ -170,9 +170,16 @@ public class Main {
 		}
 	}
 
+    private Optional<BibTeXEntry> findDB(String pubname) {
+        for (String dbname : dbs.keySet()) {
+            BibTeXDatabase db = dbs.get(dbname);
+            BibTeXEntry entry = db.resolveEntry(new Key(pubname));
+            if (entry != null) return Optional.of(entry);
+        }
+        return Optional.empty();
+    }
 	
 	private void readPublications(Scanner sc) {
-		assert db.hasValue();
 		boolean multiline = isMultilineValue(sc);
 		if (!multiline) {
 			out.println("Publication list must use braces ({}) at " + sc.location());
@@ -180,15 +187,42 @@ public class Main {
 		}
 		while (!rhsClosed(sc, multiline)) {
 			String pubname = Parsing.parseAttribute(sc);
-			try {
-				Publication p = new Publication(pubname, sc, db.get());
-				pubs.put(pubname,  p);
-			} catch (ParseError e) {
-				out.println("Parse error " + e.getMessage() + " at " + sc.location());
-				return;
-			}
+            if (pubname.isEmpty()) {
+                out.println("Empty publication name at " + sc.location());
+                return;
+            }
+            try {
+                Optional<BibTeXEntry> entry = findDB(pubname);
+                Publication p = new Publication(pubname, sc, entry);
+                pubs.put(pubname,  p);
+                if (entry.isEmpty()) {
+                    out.println("Warning: Cannot find publication \"" + pubname + "\" at " + sc.location());
+                }
+			} catch (ParseError exc) {
+				out.println("Parse error " + exc.getMessage() + " at " +
+                            sc.location());
+            }
 		}
 	}
+
+    /** Automatically import all publications from included
+     *  bibtex databases.
+     */
+    protected void autoImportPubs() {
+        out.println("No pubs block, automatically importing publications\n");
+        for (String dbname : dbs.keySet()) {
+            out.println("  importing from " + dbname);
+            BibTeXDatabase db = dbs.get(dbname);
+            for (Key key : db.getEntries().keySet()) {
+                String pubname = key.getValue();
+                BibTeXEntry entry = db.getEntries().get(key);
+                out.println("    " + entry.getKey());
+                entry.getKey().getValue();
+                Publication p = new Publication(pubname, entry);
+                pubs.put(pubname, p);
+            }
+        }
+    }
 
 	/**
 	 * execute a line of the script with form 'attribute: value', where
@@ -199,7 +233,7 @@ public class Main {
 
 		switch (attribute) {
 		case "bibfile":
-			bibFile = Parsing.parseValue(sc);
+			String bibFile = Parsing.parseValue(sc);
 			BibTeXParser parser;
 			try {
 				parser = new BibTeXParser();
@@ -212,29 +246,23 @@ public class Main {
 			}
 			try {
 				Reader r = new FileReader(expand(bibFile));
-				BibTeXDatabase b = parser.parseFully(r);
+				BibTeXDatabase db = parser.parseFully(r);
 				r.close();
-				db = Maybe.some(b);
+                dbs.put(bibFile, db);
+				out.println("Found " + db.getObjects().size() +
+                    " publications in BibTeX file " + bibFile);
 			} catch (IOException e) {
 				System.err.println("IO exception parsing bib file at " + sc.location());
 			}
-			
-			db.ifsome(db2 ->
-				{ out.println("Found " + db2.getObjects().size() + " objects in BibTeX file.");});
 			break;
 		case "pubs":
-			db.if_(db1 -> {
-				readPublications(sc);
-
-				System.out.println("Found " + pubs.size()
-				+ " publications in script.");
-				return;
-			},
-			() -> out.println("Warning: should read the bib file before reading the 'pubs' list at "
-					+ sc.location()));
-			break;
+            readPublications(sc);
+            System.out.println("Found " + pubs.size()
+                                + " publications in script.");
+            break;
 		case "generate":
 			generated = true;
+            if (pubs.isEmpty()) autoImportPubs();
 			generate(sc);
 			break;
 		case "include":
@@ -692,11 +720,17 @@ public class Main {
 	}
 
 	protected void generatePub(Publication p, PrintWriter w) {
-		t2h.push(new PubContext(p));
+        boolean pushed = false;
 		try {
+            PubContext ctxt = new PubContext(p);
+            t2h.push(ctxt);
+            pushed = true;
 			w.println(expand("\\pubformat"));
-		} finally {
-			t2h.pop();
+		}
+        catch (RuntimeException exc) {
+            out.println("Generation of public " + p + " failed:\n" + exc);
+        } finally {
+			if (pushed) t2h.pop();
 		}
 	}
 }

@@ -2,13 +2,7 @@ bibfile: example.bib
 
 pubs {
     abadi99 {
-      authors: Mart&iacute;n Abadi and Andrew D. Gordon
-      topic: Security languages
-      project: spi
-      blurb {
-        A seminal paper on using programming languages to model cryptographic
-        protocols.
-      }
+        month: January
     }
     dummy1 {
         pubtype: inproceedings

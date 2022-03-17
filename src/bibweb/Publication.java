@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -35,11 +36,11 @@ public class Publication {
 	/** Additional definitions overlaid by the script.*/
 	protected Map<String, String> defns = new HashMap<>();
 
-	/** Contents of the .bib file */
-	protected BibTeXDatabase db;
+	/** The entry in the bibtex file it was found in, if any. */
+    protected Optional<BibTeXEntry> entry;
 
-	Publication(String k, Scanner sc, BibTeXDatabase db) throws ParseError {
-		this.db = db;
+	Publication(String k, Scanner sc, Optional<BibTeXEntry> entry) throws ParseError {
+		this.entry = entry;
 		key = k;
 		bibkey = new Key(k);
 		topics = new ArrayList<String>();
@@ -69,20 +70,26 @@ public class Publication {
 		}
 	}
 
+    Publication(String k, BibTeXEntry entry) {
+        this.entry = Optional.of(entry);
+        key = k;
+        bibkey = new Key(k);
+    }
+
 	public String toString() {
 		return key;
 	}
 	
-	BibTeXEntry entry() {
-		return db.getEntries().get(bibkey);
+	Optional<BibTeXEntry> entry() {
+		return entry;
 	}
 
 	// may return null
 	String field(String override, Key k) {
 		if (defns.containsKey(override)) return defns.get(override);
-		BibTeXEntry entry = entry();
-		if (entry == null) return null;
-		Value v = entry.getField(k);
+		Optional<BibTeXEntry> entry = entry();
+		if (entry.isEmpty()) return null;
+		Value v = entry.get().getField(k);
 		if (v == null)
 			return null;
 		return v.toUserString();
@@ -121,9 +128,9 @@ public class Publication {
 
 	String pubType() {
 		if (defns.containsKey("pubtype")) return defns.get("pubtype");
-		BibTeXEntry e = entry();
-		if (e == null) return "unknown";
-		else return e.getType().getValue().toLowerCase();
+		Optional<BibTeXEntry> e = entry();
+        if (e.isEmpty()) return "unknown";
+		else return e.get().getType().getValue().toLowerCase();
 	}
 
     // may return null
@@ -159,7 +166,8 @@ public class Publication {
 		try {
 			return Integer.parseInt(bibtexYear());
 		} catch (NumberFormatException e) {
-			System.err.println("Bad year in publication " + key);
+			System.err.println("Bad year in publication " + key + ": " +
+                bibtexYear());
 			return 0;
 		}
 	}

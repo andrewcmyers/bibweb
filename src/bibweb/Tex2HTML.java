@@ -227,8 +227,14 @@ public class Tex2HTML {
 						assert bracedepth >= macrodepth;
 						if (bracedepth == macrodepth) {
 							state = State.FullMacro;
-							assert macro_args != null && cur_arg != null;
-							macro_args.add(cur_arg.toString());
+                            if (cur_arg == null) {
+                                System.out.println("cur_arg is null");
+                            } else if (macro_args == null) {
+                                System.out.println("macro args are null, cur_arg = " + cur_arg);
+
+                            } else {
+                                macro_args.add(cur_arg.toString());
+                            }
 						} else {
 							assert cur_arg != null;
 							cur_arg.append(c);
