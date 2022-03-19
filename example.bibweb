@@ -1,6 +1,5 @@
 bibfile: example.bib
 
-
 pubs {
     abadi99:
     lampson73:
@@ -9,7 +8,7 @@ pubs {
         pubtype: inproceedings
         title: A fake paper
         authors: John Doe and Jane Doe
-        topic: security
+        topic: Education
         booktitle: A fake conference
         year: 2015
         month: June

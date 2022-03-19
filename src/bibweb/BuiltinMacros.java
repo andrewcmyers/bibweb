@@ -60,7 +60,7 @@ public class BuiltinMacros {
 		{ "intro",       "<h2>Publications</h2>" },
 		{ "banner",      "<h1>Publications by \\author</h1>" },
 		{ "stylesheet",  "default.css" },
-		{ "author",      "John Doe" },
+		{ "author",      "Unknown Author" },
 		{ "openpaperlist", "<ul class=pubs>" },
 		{ "closepaperlist", "</ul>" },
 		{ "pubformat",

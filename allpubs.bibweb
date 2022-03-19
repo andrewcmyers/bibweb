@@ -1,7 +1,18 @@
 pubs {
+    ml-ifc-97 {
+      topic: Security Languages
+      blurb: This paper introduced the idea of decentralized information flow control (DIFC).
+    }
+    lampson73 {
+      topic: Security
+      blurb {
+        An important paper that defined covert channels and shaped thinking about
+        security and information flow.
+      }
+    }
     abadi99 {
       authors: Mart&iacute;n Abadi and Andrew D. Gordon
-      topic: Security languages
+      topic: Security Languages
       project: spi
       blurb {
         A seminal paper on using programming languages to model cryptographic
@@ -12,7 +23,7 @@ pubs {
         pubtype: inproceedings
         title: A fake paper
         authors: John Doe and Jane Doe
-        topic: security
+        topic: Education
         booktitle: A fake conference
         year: 2015
         month: June

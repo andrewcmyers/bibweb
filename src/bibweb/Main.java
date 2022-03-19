@@ -1,7 +1,6 @@
 package bibweb;
 
-import static bibweb.Parsing.isMultilineValue;
-import static bibweb.Parsing.rhsClosed;
+import static bibweb.Parsing.*;
 import static java.lang.System.out;
 
 import java.io.File;
@@ -21,7 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.NoSuchElementException;
+import static java.util.Optional.empty;
 
 import org.jbibtex.BibTeXDatabase;
 import org.jbibtex.BibTeXEntry;
@@ -182,7 +181,9 @@ public class Main {
 	private void readPublications(Scanner sc) {
 		boolean multiline = isMultilineValue(sc);
 		if (!multiline) {
-			out.println("Publication list must use braces ({}) at " + sc.location());
+			readBibFile(sc, parseText(sc, false))
+				.ifPresent(db ->
+					importPubs(db));
 			return;
 		}
 		while (!rhsClosed(sc, multiline)) {
@@ -196,7 +197,7 @@ public class Main {
                 Publication p = new Publication(pubname, sc, entry);
                 pubs.put(pubname,  p);
                 if (entry.isEmpty()) {
-                    out.println("Warning: Cannot find publication \"" + pubname + "\" at " + sc.location());
+                    out.println("Cannot find publication \"" + pubname + "\" in any BibTeX database at " + sc.location());
                 }
 			} catch (ParseError exc) {
 				out.println("Parse error " + exc.getMessage() + " at " +
@@ -205,23 +206,53 @@ public class Main {
 		}
 	}
 
-    /** Automatically import all publications from included
-     *  bibtex databases.
+	/* Import all publications from a BibTeX database
+	 */
+	private void importPubs(BibTeXDatabase db) {
+		for (Key key : db.getEntries().keySet()) {
+			String pubname = key.getValue();
+			BibTeXEntry entry = db.getEntries().get(key);
+			entry.getKey().getValue();
+			Publication p = new Publication(pubname, entry);
+			pubs.put(pubname, p);
+		}
+	}
+
+	/** Automatically import all publications from included
+	 *  bibtex databases.
      */
-    protected void autoImportPubs() {
+    protected void autoImportAllPubs() {
         out.println("No pubs block, automatically importing publications");
         for (String dbname : dbs.keySet()) {
             out.println("  importing from " + dbname);
-            BibTeXDatabase db = dbs.get(dbname);
-            for (Key key : db.getEntries().keySet()) {
-                String pubname = key.getValue();
-                BibTeXEntry entry = db.getEntries().get(key);
-                entry.getKey().getValue();
-                Publication p = new Publication(pubname, entry);
-                pubs.put(pubname, p);
-            }
+			importPubs(dbs.get(dbname));
         }
     }
+
+	Optional<BibTeXDatabase> readBibFile(Scanner sc, String bibFile) {
+		BibTeXParser parser;
+		try {
+			parser = new BibTeXParser();
+		} catch (TokenMgrException e) {
+			System.err.println("Failed reading bib file at " + sc.location());
+			return empty();
+		} catch (ParseException e) {
+			System.err.println("Failed reading bib file at " + sc.location());
+			return empty();
+		}
+		try {
+			Reader r = new FileReader(expand(bibFile));
+			BibTeXDatabase db = parser.parseFully(r);
+			r.close();
+			dbs.put(bibFile, db);
+			out.println("Found " + db.getObjects().size() +
+					" publications in BibTeX file " + bibFile);
+			return Optional.of(db);
+		} catch (IOException e) {
+			System.err.println("IO exception parsing bib file at " + sc.location());
+			return empty();
+		}
+	}
 
 	/**
 	 * execute a line of the script with form 'attribute: value', where
@@ -233,26 +264,7 @@ public class Main {
 		switch (attribute) {
 		case "bibfile":
 			String bibFile = Parsing.parseValue(sc);
-			BibTeXParser parser;
-			try {
-				parser = new BibTeXParser();
-			} catch (TokenMgrException e) {
-				System.err.println("Failed reading bib file at " + sc.location());
-				return;
-			} catch (ParseException e) {
-				System.err.println("Failed reading bib file at " + sc.location());
-				return;
-			}
-			try {
-				Reader r = new FileReader(expand(bibFile));
-				BibTeXDatabase db = parser.parseFully(r);
-				r.close();
-                dbs.put(bibFile, db);
-				out.println("Found " + db.getObjects().size() +
-                    " publications in BibTeX file " + bibFile);
-			} catch (IOException e) {
-				System.err.println("IO exception parsing bib file at " + sc.location());
-			}
+			readBibFile(sc, bibFile);
 			break;
 		case "pubs":
             readPublications(sc);
@@ -261,7 +273,7 @@ public class Main {
             break;
 		case "generate":
 			generated = true;
-            if (pubs.isEmpty()) autoImportPubs();
+            if (pubs.isEmpty()) autoImportAllPubs();
 			generate(sc);
 			break;
 		case "include":
@@ -508,7 +520,7 @@ public class Main {
                     try {
                         sc.whitespace(); sc.consume(":"); sc.whitespace();
                     } catch (UnexpectedInput uinp) {
-                        throw new ParseError("Expected sort key " + sc.location());
+                        throw new ParseError("Expected sort key at " + sc.location());
                     }
                     order = parseOrder(sc);
                     break;
