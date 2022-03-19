@@ -373,8 +373,7 @@ public class Tex2HTML {
 
 	private String expandMacro(String macro_name, List<String> macro_argument) {
 		assert macro_argument != null;
-//		 System.out.println("handling macro \\" + macro_name
-//		 + macro_argument);
+//	 System.out.println("handling macro \\" + macro_name + macro_argument);
 		try {
 			String result = context.lookup(macro_name);
 			// XXX should watch for escaped # here.
