@@ -2,9 +2,9 @@ bibfile: example.bib
 
 
 pubs {
-    abadi99 {
-        month: January
-    }
+    abadi99:
+    lampson73:
+    ml-ifc-97:
     dummy1 {
         pubtype: inproceedings
         title: A fake paper
@@ -18,8 +18,6 @@ pubs {
 
 closing {
     </div>
-    <p>Note: The paper by Abadi and Gordon was chosen because
-    it was the first entry in a real BibTex file!</p>
 }
 
 % comment
@@ -31,7 +29,6 @@ generate {
     }
     section {
         intro: <h2>Publications by Andrew Gordon</h2>
-        select: pubtype: article
         select {
             author: Andrew D. Gordon
         }

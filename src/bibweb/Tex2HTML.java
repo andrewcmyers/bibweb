@@ -272,6 +272,7 @@ public class Tex2HTML {
 						state = State.LongMacroArg;
 						bracedepth = 1;
 						cur_arg = new StringBuilder();
+						macro_args = new ArrayList<>();
 					} else if (c == eof) {
 						assert macro_name != null;
 						inp.push(expandMacro(macro_name.toString(),

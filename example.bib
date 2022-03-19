@@ -1,3 +1,7 @@
+@string{cacm = {Comm. of the ACM}}
+@string{n16 = "16th"}
+@string{SOSP_ = "{ACM} Symp.~on Operating System Principles (SOSP)"}
+@string{SOSP16 = n16 # " " # SOSP_ }
 @Article{abadi99,
   author = 	 {Mart\'in Abadi and Andrew D. Gordon},
   title = 	 "A Calculus for Cryptographic Protocols: The {Spi} Calculus",
@@ -9,3 +13,24 @@
   pages =	 "1--70",
   url = {http://dx.doi.org/10.1006/inco.1998.2740}
 }
+@article{lampson73,
+    author = "Butler W. Lampson",
+    title = "A Note on the Confinement Problem",
+    journal = cacm,
+    volume = 16,
+    number = 10,
+    month = oct,
+    year = 1973,
+    pages = {613--615}
+}
+@inproceedings{ml-ifc-97,
+	author = "Andrew C. Myers and Barbara Liskov",
+	title = "A Decentralized Model for Information Flow Control",
+	booktitle = SOSP16,
+	year = 1997,
+        month = oct,
+	pages = "129--142",
+	location = "Saint-Malo, France",
+        url = "http://www.cs.cornell.edu/andru/papers/iflow-sosp97/paper.html"
+}
+
