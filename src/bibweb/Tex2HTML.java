@@ -157,7 +157,8 @@ public class Tex2HTML {
 					case '-':
 					case '&':
 					case '#':
-					case '~':
+					case '_':
+					case '%':
 						ret.append(c);
 						state = State.Normal;
 						break;
@@ -165,7 +166,10 @@ public class Tex2HTML {
                         ret.append(' ');
                         break;
 					case '\'': // one-char macros
+					case '`':
 					case '"':
+					case ',':
+					case '~':
                     case '^':
 						macro_name = new StringBuilder();
 						macro_name.append(c);
@@ -270,7 +274,7 @@ public class Tex2HTML {
 				case ShortMacroArg:
 					if (c == '{') {
 						state = State.LongMacroArg;
-						bracedepth = 1;
+						bracedepth++;
 						cur_arg = new StringBuilder();
 						macro_args = new ArrayList<>();
 					} else if (c == eof) {

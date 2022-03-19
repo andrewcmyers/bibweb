@@ -164,12 +164,24 @@ public class Publication {
 	}
 	int year() {
 		try {
-			return Integer.parseInt(bibtexYear());
+			String y = bibtexYear();
+			if (y == null) {
+				System.err.println("No year given for publication " + key);
+				return 0;
+			}
+			return strToYear(y);
 		} catch (NumberFormatException e) {
 			System.err.println("Bad year in publication " + key + ": " +
-                bibtexYear());
+					bibtexYear());
 			return 0;
 		}
+	}
+
+	/* Parse a bibtex field as a year, in a permissive way.
+	*  @throws NumberFormatException if a year cannot be found. */
+	int strToYear(String y) throws NumberFormatException {
+		String[] fields = y.split("\s+");
+		return Integer.parseInt(y.split("\s+")[fields.length - 1]);
 	}
 
     // may return null
