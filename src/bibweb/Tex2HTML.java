@@ -66,7 +66,7 @@ public class Tex2HTML {
 		StringBuilder cur_arg = null;
 		StringBuilder ret = new StringBuilder();
 		final char eof = (char) -1;
-		int bracedepth = 0, macrodepth = 0;
+		int brace_depth = 0, macro_depth = 0;
 		try {
 			context.push();
 
@@ -89,17 +89,17 @@ public class Tex2HTML {
 						state = State.Backslash;
 						break;
 					case '{':
-						bracedepth++;
-						if (showbraces) System.out.println("incrementing brace depth to " + bracedepth + " at " + inp);
+						brace_depth++;
+						if (showbraces) System.out.println("incrementing brace depth to " + brace_depth + " at " + inp);
 						context.push();
 						state = State.Normal;
 						break;
 					case '}':
-						if (bracedepth <= 0)
+						if (brace_depth <= 0)
 							throw new T2HErr(
 									"More closing braces than opening ones: " + inp);
-						bracedepth--;
-						if (showbraces) System.out.println("decrementing brace depth to " + bracedepth + " at " + inp);
+						brace_depth--;
+						if (showbraces) System.out.println("decrementing brace depth to " + brace_depth + " at " + inp);
 						context.pop();
 						state = State.Normal;
 						break;
@@ -129,7 +129,7 @@ public class Tex2HTML {
 						break;
 					default:
 						if (Character.isAlphabetic(c) && sentence_case
-								&& bracedepth == 0 && state != State.Start) {
+								&& brace_depth == 0 && state != State.Start) {
 							ret.append(Character.toLowerCase(c));
 							state = State.Normal;
 						} else if (Character.isWhitespace(c)
@@ -152,7 +152,8 @@ public class Tex2HTML {
 						ret.append('\\');
 						state = (c == eof) ? State.EOF : State.Normal;
 						break;
-					case '{': // using backslash for verbatim chars
+					/* Use of \ for verbatim characters. */
+					case '{':
 					case '}':
 					case '-':
 					case '&':
@@ -163,7 +164,7 @@ public class Tex2HTML {
 						state = State.Normal;
 						break;
                     case ' ':
-                        ret.append(' ');
+                        ret.append("&nbsp;");
                         break;
 					case '\'': // one-char macros
 					case '`':
@@ -201,9 +202,9 @@ public class Tex2HTML {
 						macro_args = new ArrayList<>();
 						cur_arg = new StringBuilder();
 						
-						macrodepth = bracedepth;
-						if (showbraces) System.out.println("incrementing brace depth in macro (1) to " + bracedepth + " at " + inp);
-						bracedepth++;
+						macro_depth = brace_depth;
+						if (showbraces) System.out.println("incrementing brace depth in macro (1) to " + brace_depth + " at " + inp);
+						brace_depth++;
 					} else {
 						if (c != eof)
 							inp.push(Character.toString(c));
@@ -223,14 +224,14 @@ public class Tex2HTML {
 					if (c == '{') {
 						assert cur_arg != null;
 						cur_arg.append(c);
-						bracedepth++;
-						if (showbraces) System.out.println("incrementing brace depth in macro (2) to " + bracedepth + " at " + inp);
+						brace_depth++;
+						if (showbraces) System.out.println("incrementing brace depth in macro (2) to " + brace_depth + " at " + inp);
 						// state = State.LongMacroArg;
 					} else if (c == '}') {
-						bracedepth--;
-						if (showbraces) System.out.println("decrementing brace depth in macro to " + bracedepth + " at " + inp);
-						assert bracedepth >= macrodepth;
-						if (bracedepth == macrodepth) {
+						brace_depth--;
+						if (showbraces) System.out.println("decrementing brace depth in macro to " + brace_depth + " at " + inp);
+						assert brace_depth >= macro_depth;
+						if (brace_depth == macro_depth) {
 							state = State.FullMacro;
                             if (cur_arg == null) {
                                 System.out.println("cur_arg is null");
@@ -255,7 +256,7 @@ public class Tex2HTML {
 					break;
 				case FullMacro:
 					if (c == '{') {
-						bracedepth++;
+						brace_depth++;
 //						System.out.println("Incrementing brace depth at full macro " + inp);
 						state = State.LongMacroArg;
 						cur_arg = new StringBuilder();
@@ -274,7 +275,8 @@ public class Tex2HTML {
 				case ShortMacroArg:
 					if (c == '{') {
 						state = State.LongMacroArg;
-						bracedepth++;
+						macro_depth = brace_depth;
+						brace_depth++;
 						cur_arg = new StringBuilder();
 						macro_args = new ArrayList<>();
 					} else if (c == eof) {
@@ -360,7 +362,7 @@ public class Tex2HTML {
 	}
 
 	private String expandMacro(String macro_name) {
-//		System.out.println("expanding macro \\" + macro_name);
+//		System.out.println("expanding simple macro \\" + macro_name);
 		try {
 			return context.lookup(macro_name);
 		} catch (LookupFailure e) {
@@ -371,11 +373,12 @@ public class Tex2HTML {
 
 	private String expandMacro(String macro_name, List<String> macro_argument) {
 		assert macro_argument != null;
-//		 System.out.println("handling macro \\" + macro_name 
+//		 System.out.println("handling macro \\" + macro_name
 //		 + macro_argument);
 		try {
 			String result = context.lookup(macro_name);
 			// XXX should watch for escaped # here.
+
 			for (int i = 0; i < macro_argument.size(); i++) {
 				result = result.replaceAll("#" + (i+1), macro_argument.get(i));
 			}

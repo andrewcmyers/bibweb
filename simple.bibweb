@@ -1,0 +1,9 @@
+pubs: example.bib
+banner: <h1>List of Publications</h1>
+
+% comment
+
+generate {
+    output: simple.html
+    section:
+}

@@ -154,7 +154,7 @@ public class Main {
 			runScript(input);
 			input.close();
 		} catch (FileNotFoundException e1) {
-			System.err.println("File not found: " + inputFile);
+			System.err.println("File not found: " + inputFile.get());
 		} catch (IOException e) {
 			System.err.println("IO Exception in " + inputFile + ": " + e.getMessage());
 		}
