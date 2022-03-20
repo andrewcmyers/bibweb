@@ -18,5 +18,12 @@ Run with a bibweb script file as an argument, for example:
 
     ./bibweb simple.bibweb
 
+Run with the `--help` option to see a summary of syntax.
+
+    ./bibweb --help
+
+## Documentation
+
+More documentation can be found at https://andrewcmyers.github.io/bibweb/
 
 Written by Andrew Myers, June 2015.
