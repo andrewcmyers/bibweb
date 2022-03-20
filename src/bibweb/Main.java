@@ -427,16 +427,16 @@ public class Main {
 		boolean header = false;
 		boolean multiline = isMultilineValue(sc);
 		if (!multiline) {
-			System.out.println("generate command requires braces {} : " + sc.location());
+			out.println("generate command requires braces {} : " + sc.location());
 			return;
 		}
 		try {
 			while (!rhsClosed(sc, multiline)) {
-				String attribute = Parsing.parseAttribute(sc);
+				String attribute = parseAttribute(sc);
 				switch (attribute) {
 				case "output":
-					fname = Parsing.parseValue(sc);
-					System.out.println("Creating output file " + fname);
+					fname = parseValue(sc);
+					out.println("Creating output file " + fname);
 					if (w != null) {
 						System.err
 								.println("Cannot have two outputs defined for one bib generation: " + sc);
@@ -462,13 +462,13 @@ public class Main {
 					generateSection(w, sc);
 					break;
 				default:
-					t2h.addMacro(attribute, Parsing.parseValue(sc));
+					t2h.addMacro(attribute, parseValue(sc));
 				}
 			}
 			if (w != null) {
 				generateFooter(w);
 			} else {
-				System.out
+				out
 						.println("No output file specified in 'generate', no output generated.");
 			}
 
@@ -477,7 +477,7 @@ public class Main {
 		}
 		finally {
 			if (sections == false) {
-				System.out
+				out
 						.println("No 'section' subcommand used in 'generate', no pubs generated in list.");
 			}
 			t2h.pop();

@@ -118,7 +118,7 @@ public class Tex2HTML {
 						state = State.Normal;
 						break;
 					case '~':
-						ret.append("&nbsp;");
+						inp.push("{\\tildechar}");
 						state = State.Normal;
 						break;
 					case '\r':
@@ -367,7 +367,9 @@ public class Tex2HTML {
 		}
 		case "def":
 			if (args.size() != 2) throw new T2HErr("Usage: \\def{macro}{expansion}");
-			context.add(args.get(0), args.get(1));
+			String mname = args.get(0);
+			if (mname.charAt(0) == '\\') mname = mname.substring(1);
+			context.add(mname, args.get(1));
 			break;
 		case "depth":
 			inp.push("" + context.depth());
@@ -378,9 +380,11 @@ public class Tex2HTML {
 	}
 
 	private String expandMacro(String macro_name) {
-//		System.out.println("expanding simple macro \\" + macro_name);
+//		System.out.print("handling simple macro \\" + macro_name);
 		try {
-			return context.lookup(macro_name);
+			String result = context.lookup(macro_name);
+//			System.out.println(" -> " + result);
+			return result;
 		} catch (LookupFailure e) {
 			return "<em>Don't know how to expand parameterless macro "
 							+ macro_name + "</em>";

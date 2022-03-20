@@ -57,7 +57,7 @@ public class StringInput implements Input {
 		if (f == null)
 			return "\"\"";
 		else
-			return "input/\"" + f.firstn(80) + "\"";
+			return "input [" + f.firstn(80) + "]";
 	}
 
 	@Override

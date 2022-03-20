@@ -64,7 +64,7 @@ public class BuiltinMacros {
 		{ "@", "" },
 		{ "--", "&ndash;" },
 		{ "---", "&mdash;" },
-		{ "~", "&nbsp;" },
+		{ "tildechar", "&nbsp;" },
 		{ "textsuperscript", "<span class=ordinal>#1</span>" },
 		{ "texttt", "<tt>#1</tt>" },
 		{ "textbf", "<b>#1</b>" },
@@ -119,6 +119,7 @@ public class BuiltinMacros {
 		{ "author",      "Unknown Author" },
 		{ "openpaperlist", "<ul class=pubs>" },
 		{ "closepaperlist", "</ul>" },
+		{ "escapedurl", "{\\def{\\tildechar}{\\%7E}\\paperurl}"},
 		{ "pubformat",
 			"<li>\r\n\\authors. \\title.\r\n"
 	      + "\\wherepublished.</li>\r\n" },
