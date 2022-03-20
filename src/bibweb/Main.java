@@ -707,9 +707,7 @@ public class Main {
 			ctxt.add("authors", authors);
 			if (p.author() != null) ctxt.add("bibtexAuthors", p.author());
 			ctxt.add("pubtype", p.pubType());
-			if (p.url() != null) {
-				ctxt.add("paperurl", p.url());
-			}
+			if (p.url() != null) ctxt.add("paperurl", p.url());
 			ctxt.add("venue", p.venue());
 			ctxt.add("key", p.key);
 			ctxt.add("year", p.bibtexYear());

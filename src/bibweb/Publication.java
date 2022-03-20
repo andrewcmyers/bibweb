@@ -112,11 +112,7 @@ public class Publication {
 
     // may return null
 	String pages() {
-		String pp = field("pages", BibTeXEntry.KEY_PAGES);
-		if (pp == null)
-			return null;
-		return pp.replaceAll("--", "&ndash;"); // this should be handled by
-											   // TeX2HTML
+		return field("pages", BibTeXEntry.KEY_PAGES);
 	}
 
 	static Key KEY_venueURL = new Key("venueurl");
