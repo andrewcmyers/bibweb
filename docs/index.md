@@ -34,16 +34,20 @@ A short summary of available commands is readily available:
 ## Syntax
 
 The script is a sequence of attributes, some of which are recognized as commands.
-An attrbute can be declared on a single line:
+An attribute can be declared on a single line:
 
-```
-bibfile: input.bib
-```
+    bibfile: input.bib
+
 or on multiple lines, delimited by braces.
 
-```
-bibfile {
-    input.bib
-}
-```
+    bibfile {
+        input.bib
+    }
+
 Most attributes work with either syntax.
+
+## Top-level commands
+
+### bibfile
+### pubs
+### generate
