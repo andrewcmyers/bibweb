@@ -7,11 +7,17 @@ define all generated output.
 
 ## Usage
 
-To run bibweb, it is given a bibweb script as an argument. A minimal script
-that generates output from a BibTeX database looks like the following:
+To run bibweb, it is given a bibweb script as an argument:
 
 ```
-pubs: input.bb
+bibweb example.bibweb
+```
+
+A minimal script that generates output from a BibTeX database looks like the
+following:
+
+```
+pubs: input.bib
 generate {
     output: output.html
     section:
@@ -19,7 +25,15 @@ generate {
 ```
 
 A script may read input from multiple BibTeX databases, and may add additional information to
-entries it has read. If a database is read using the `pubs` command
+entries it has read. If a database is read using the `pubs` command, its entries are automatically
+selected for inclusion in generated output. The `bibfile` command can be used to read entries with
+selecting them.
+
+A short summary of available commands is readily available:
+
+```
+bibweb --help
+```
 
 ## Syntax
 
