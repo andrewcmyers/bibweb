@@ -194,11 +194,11 @@ public class Main {
             }
             try {
                 Optional<BibTeXEntry> entry = findDB(pubname);
+				if (entry.isEmpty()) {
+					out.println("Warning: no BibTeX record for " + pubname);
+				}
                 Publication p = new Publication(pubname, sc, entry);
                 pubs.put(pubname,  p);
-                if (entry.isEmpty()) {
-                    out.println("Cannot find publication \"" + pubname + "\" in any BibTeX database at " + sc.location());
-                }
 			} catch (ParseError exc) {
 				out.println("Parse error " + exc.getMessage() + " at " +
                             sc.location());
@@ -246,7 +246,7 @@ public class Main {
 			r.close();
 			dbs.put(bibFile, db);
 			out.println("Found " + db.getObjects().size() +
-					" publications in BibTeX file " + bibFile);
+					" records in BibTeX file " + bibFile);
 			return Optional.of(db);
 		} catch (IOException e) {
 			System.err.println("IO exception parsing bib file at " + sc.location());

@@ -180,7 +180,7 @@ public class Publication {
 	/* Parse a bibtex field as a year, in a permissive way.
 	*  @throws NumberFormatException if a year cannot be found. */
 	int strToYear(String y) throws NumberFormatException {
-		String[] fields = y.split("\s+");
+		String[] fields = y.trim().split("\s+");
 		return Integer.parseInt(y.split("\s+")[fields.length - 1]);
 	}
 
