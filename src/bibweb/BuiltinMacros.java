@@ -123,6 +123,7 @@ public class BuiltinMacros {
 		{ "pubformat",
 			"<li>\r\n\\authors. \\title.\r\n"
 	      + "\\wherepublished.</li>\r\n" },
+// "special" macros are defined starting with a \
 	    { "\\authors", "(formatted author list)" },
 	    { "\\title", "(title of this publication)" },
 	    { "\\wherepublished", "(publication venue and pages)" },

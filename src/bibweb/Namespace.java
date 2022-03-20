@@ -5,5 +5,4 @@ public interface Namespace {
 	static class LookupFailure extends Exception {}
 
 	String lookup(String name) throws LookupFailure;
-
 }

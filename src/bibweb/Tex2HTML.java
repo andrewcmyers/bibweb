@@ -11,8 +11,9 @@ import bibweb.Namespace.LookupFailure;
 public class Tex2HTML {
 	Context context = new Context();
 	private ExtInfo ext_info;
-	private static final boolean showbraces = false;
-	
+	private static final boolean report_braces = false;
+	private static final boolean report_macros = false;
+
 	Tex2HTML(ExtInfo ext)
 	{
 		String[][] builtin_macros = BuiltinMacros.macros;
@@ -90,7 +91,7 @@ public class Tex2HTML {
 						break;
 					case '{':
 						brace_depth++;
-						if (showbraces) System.out.println("incrementing brace depth to " + brace_depth + " at " + inp);
+						if (report_braces) System.out.println("incrementing brace depth to " + brace_depth + " at " + inp);
 						context.push();
 						state = State.Normal;
 						break;
@@ -99,7 +100,7 @@ public class Tex2HTML {
 							throw new T2HErr(
 									"More closing braces than opening ones: " + inp);
 						brace_depth--;
-						if (showbraces) System.out.println("decrementing brace depth to " + brace_depth + " at " + inp);
+						if (report_braces) System.out.println("decrementing brace depth to " + brace_depth + " at " + inp);
 						context.pop();
 						state = State.Normal;
 						break;
@@ -118,7 +119,7 @@ public class Tex2HTML {
 						state = State.Normal;
 						break;
 					case '~':
-						inp.push("{\\tildechar}");
+						inp.push("\\tildechar ");
 						state = State.Normal;
 						break;
 					case '\r':
@@ -204,10 +205,10 @@ public class Tex2HTML {
 						cur_arg = new StringBuilder();
 						
 						macro_depth = brace_depth;
-						if (showbraces) System.out.println("incrementing brace depth in macro (1) to " + brace_depth + " at " + inp);
+						if (report_braces) System.out.println("incrementing brace depth in macro (1) to " + brace_depth + " at " + inp);
 						brace_depth++;
 					} else {
-						if (c != eof)
+						if (c != eof && c != ' ')
 							inp.push(Character.toString(c));
 						assert macro_name != null;
 						String name = macro_name.toString();
@@ -226,11 +227,11 @@ public class Tex2HTML {
 						assert cur_arg != null;
 						cur_arg.append(c);
 						brace_depth++;
-						if (showbraces) System.out.println("incrementing brace depth in macro (2) to " + brace_depth + " at " + inp);
+						if (report_braces) System.out.println("incrementing brace depth in macro (2) to " + brace_depth + " at " + inp);
 						// state = State.LongMacroArg;
 					} else if (c == '}') {
 						brace_depth--;
-						if (showbraces) System.out.println("decrementing brace depth in macro to " + brace_depth + " at " + inp);
+						if (report_braces) System.out.println("decrementing brace depth in macro to " + brace_depth + " at " + inp);
 						assert brace_depth >= macro_depth;
 						if (brace_depth == macro_depth) {
 							state = State.FullMacro;
@@ -329,7 +330,7 @@ public class Tex2HTML {
 		}
 
 	private void handleSpecialMacro(Input inp, String name, List<String> args) throws T2HErr {
-//		 System.out.println("handling special macro \\" + name + args);
+        if (report_macros) System.out.println("handling special macro \\" + name + args);
 		switch (name) {
 		case "ifdef":
 		case "ifndef":
@@ -380,10 +381,10 @@ public class Tex2HTML {
 	}
 
 	private String expandMacro(String macro_name) {
-//		System.out.print("handling simple macro \\" + macro_name);
+		if (report_macros) System.out.print("handling simple macro \\" + macro_name);
 		try {
 			String result = context.lookup(macro_name);
-//			System.out.println(" -> " + result);
+			if (report_macros) System.out.println(" -> " + result);
 			return result;
 		} catch (LookupFailure e) {
 			return "<em>Don't know how to expand parameterless macro "
@@ -393,7 +394,7 @@ public class Tex2HTML {
 
 	private String expandMacro(String macro_name, List<String> macro_argument) {
 		assert macro_argument != null;
-//	 System.out.println("handling macro \\" + macro_name + macro_argument);
+		if (report_macros) System.out.print("handling macro \\" + macro_name + macro_argument);
 		try {
 			String result = context.lookup(macro_name);
 			// XXX should watch for escaped # here.
@@ -401,19 +402,25 @@ public class Tex2HTML {
 			for (int i = 0; i < macro_argument.size(); i++) {
 				result = result.replaceAll("#" + (i+1), macro_argument.get(i));
 			}
+			if (report_macros) System.out.println(" -> " + result);
 			return result;
-		} catch (LookupFailure e) { }
+		} catch (LookupFailure e) {
+		}
 
 		try {
 			if (macro_argument.size() > 0) {
 				try {
 					String arg = convert(macro_argument.get(0), false);
-					return context.lookup(macro_name + arg);
+					String result = context.lookup(macro_name + arg);
+					if (report_macros) System.out.println(" ->> " + result);
+					return result;
 				} catch (T2HErr e) {}
 			}
 		} catch (LookupFailure e) {
 		}
-
+		if (report_macros) {
+			System.out.println("don't know how to expand macro " + macro_name);
+		}
 		return "<em>don't know how to expand macro " + macro_name + "</em>";
 	}
 
