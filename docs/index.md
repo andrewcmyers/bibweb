@@ -31,6 +31,10 @@ A short summary of available commands is readily available:
 
     bibweb --help
 
+You can also see all the default macro definitions, which can be overridden:
+
+    bibweb --defns
+
 ## Syntax
 
 The script is a sequence of attributes, some of which are recognized as commands.
