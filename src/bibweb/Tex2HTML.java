@@ -175,6 +175,7 @@ public class Tex2HTML {
 						macro_name = new StringBuilder();
 						macro_name.append(c);
 						state = State.ShortMacroArg;
+						cur_arg = null;
 						break;
                     case '/':
 					case '@': // ignore
@@ -284,10 +285,25 @@ public class Tex2HTML {
 						inp.push(expandMacro(macro_name.toString(),
 								new ArrayList<String>()));
 						state = State.Normal;
+					} else if (c == '\\' && cur_arg == null) {
+						List<String> args = new ArrayList<String>();
+						cur_arg = new StringBuilder(c);
+						// keep reading argument
 					} else {
 						List<String> args = new ArrayList<String>();
-						args.add(Character.toString(c));
-						cur_arg = new StringBuilder();
+						if (cur_arg == null) {
+							args.add(Character.toString(c));
+						} else {
+							cur_arg.append(c);
+							if (Character.isAlphabetic(c)) {
+								while (Character.isAlphabetic(inp.peek())) {
+									cur_arg.append(inp.next());
+								}
+								args.add(expandMacro(cur_arg.toString()));
+							} else {
+								args.add(cur_arg.toString());
+							}
+						}
 						assert macro_name != null;
 						inp.push(expandMacro(macro_name.toString(), args));
 						state = State.Normal;
@@ -382,12 +398,15 @@ public class Tex2HTML {
 				result = result.replaceAll("#" + (i+1), macro_argument.get(i));
 			}
 			return result;
-		} catch (LookupFailure e) {
-		}
+		} catch (LookupFailure e) { }
 
 		try {
-			if (macro_argument.size() > 0)
-				return context.lookup(macro_name + macro_argument.get(0));
+			if (macro_argument.size() > 0) {
+				try {
+					String arg = convert(macro_argument.get(0), false);
+					return context.lookup(macro_name + arg);
+				} catch (T2HErr e) {}
+			}
 		} catch (LookupFailure e) {
 		}
 
