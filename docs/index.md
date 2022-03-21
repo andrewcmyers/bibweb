@@ -7,7 +7,7 @@ define all generated output.
 
 ## Usage
 
-To run bibweb, it is given a bibweb script as an argument:
+To run Bibweb, it is given a Bibweb script as an argument:
 
     bibweb example.bibweb
 
@@ -21,6 +21,8 @@ generate {
     section:
 }
 ```
+
+More involved script examples are included in the Bibweb distribution.
 
 A script may read input from multiple BibTeX databases, and may add additional
 information to entries it has read. If a database is read using the `pubs`
@@ -80,7 +82,7 @@ information recorded about that publication.
 
 ### include
 
-The command `include: <script>` includes another bibweb script at this point,its contents effectively replacing the `include` command.
+The command `include: <script>` includes another Bibweb script at this point, its contents effectively replacing the `include` command.
 
 ### generate
 
@@ -111,6 +113,19 @@ The `output` attribute specifies the name of the output file. Example:
 
 The section command specifies how to generate a section of the output, containing some subset of the publications in use.
 
+Publications can be selected based on a variety of attributes
+
+* `author: <name>`        select pubs by author
+* `pubtype: <type>`       select pubs by type, e.g., `inproceedings`
+* `topic: <type>`         select pubs by topic
+* `newer: <pub>`          select pubs newer than `<pub>`
+* `<attr>: <value>`       select on other paper attribute
+
 ## Important macros
 
-`\pubformat`:
+The macros supported by Bibweb can be listed by the commands:
+```
+  bibweb --defns
+```
+
+`\pubformat`: This macro describes how to generate output for a single publication.
