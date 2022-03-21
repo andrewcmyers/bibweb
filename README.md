@@ -18,7 +18,7 @@ Run with a bibweb script file as an argument, for example:
 
     ./bibweb simple.bibweb
 
-Run with the `--help` option to see a summary of syntax.
+Run with the `--help` option to see usage options and a summary of script syntax.
 
     ./bibweb --help
 
