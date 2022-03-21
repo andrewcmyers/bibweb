@@ -132,13 +132,24 @@ public class Publication {
     // may return null
 	String venue() {
 		switch (pubType()) {
-		case "inproceedings":
-			return field("booktitle", BibTeXEntry.KEY_BOOKTITLE);
-		case "article":
-			return field("journal", BibTeXEntry.KEY_JOURNAL);
-		default:
-			return "(unknown venue)";
+			case "inproceedings":
+			case "incollection":
+				return field("booktitle", BibTeXEntry.KEY_BOOKTITLE);
+			case "article":
+				return field("journal", BibTeXEntry.KEY_JOURNAL);
+			default:
+				return "(unknown venue)";
 		}
+	}
+
+	// may return null
+	String publisher() {
+		return field("publisher", BibTeXEntry.KEY_PUBLISHER);
+	}
+
+	// may return null
+	String organization() {
+		return field("organization", BibTeXEntry.KEY_ORGANIZATION);
 	}
 
 	String[] authors() {

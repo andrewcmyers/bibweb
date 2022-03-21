@@ -584,13 +584,26 @@ public class Main {
       }
     }
 
+	String pickFirst(String... choices) {
+		for (String s : choices) {
+			if (s != null) return s;
+		}
+		return null;
+	}
+
 	/** HTML description of where a publication was published. */
 	protected String wherePublished(Publication p) {
 		StringBuilder b = new StringBuilder();
 		switch (p.pubType()) {
 		case "inproceedings":
+        case "incollection":
+		case "inbook":
 			String s = p.venue();
-			b.append("<span class=\"conferencename\">\r\n");
+            if (p.pubType().equals("inproceedings")) {
+                b.append("<span class=\"conferencename\">\r\n");
+            } else {
+                b.append("<span class=\"collectionname\">\r\n");
+            }
 			if (p.venueURL() != null) {
 				b.append("<a href=\"");
 				b.append(p.venueURL());
@@ -653,13 +666,23 @@ public class Main {
 			b.append("Master's thesis, ");
 			b.append(p.school());
 			break;
+		case "bachelorsthesis":
+			b.append("Bachelor's thesis, ");
+			b.append(p.school());
+			break;
 		case "misc":
-			b.append(p.field("howpublished", BibTeXEntry.KEY_HOWPUBLISHED));
+		case "booklet":
+        case "book":
+        case "proceedings":
+		case "report":
+		case "lecture":
+		case "manual":
+			b.append(pickFirst(p.publisher(), p.organization(),
+					p.field("institution", BibTeXEntry.KEY_INSTITUTION),
+					p.field("howpublished", BibTeXEntry.KEY_HOWPUBLISHED)));
 			break;
 		default:
-			b.append("<strong>(Unhandled publication type "
-					+ p.pubType()
-					+ ")</strong>");
+			b.append("\\howpublished" + p.pubType());
 		}
 		b.append(",\r\n");
 		if (p.month() == 0) {
