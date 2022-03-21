@@ -9,7 +9,6 @@ then
 fi
 if [ -f "$root"/bibweb.jar ]
 then
-    echo java $assertions -cp "$root"/bibweb.jar bibweb.Main $*
     java $assertions -cp "$root"/bibweb.jar bibweb.Main $*
 elif [ -d "$root"/bin -a -d "$root/easyIO/bin" ]
 then
