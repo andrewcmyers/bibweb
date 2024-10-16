@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+apply plugin: 'java'
+repositories {
+    // Use 'jcenter' for resolving external dependencies
+    mavenCentral()
+}
+dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.0' 
+}
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src', 'easyIO/src', 'jbibtex/src/main/java', 'jbibtex/target/generated-sources/javacc' ]
+        }
+    }
+}
+
+application {
+    mainClass = 'bibweb.Main'
+}
+
