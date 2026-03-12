@@ -599,53 +599,56 @@ public class Main {
         case "incollection":
 		case "inbook":
 			String s = p.venue();
-            if (p.pubType().equals("inproceedings")) {
-                b.append("<span class=\"conferencename\">\r\n");
-            } else {
-                b.append("<span class=\"collectionname\">\r\n");
+            switch (p.pubType()) {
+                case "inproceedings": b.append("<span class=\"conferencename\">\r\n");
+                    break;
+                case "incollection": b.append("<span class=\"collectionname\">\r\n");
+                    break;
+                case "inbook": b.append("<span class=\"bookname\">\r\n");
+                break;
             }
-			if (p.venueURL() != null) {
-				b.append("<a href=\"");
-				b.append(p.venueURL());
-				b.append("\">\r\n");
-			}
-			b.append(expand(s));
-			if (p.venueURL() != null)
-				b.append("</a>");
-			b.append("</span>");
+            if (p.venueURL() != null) {
+                b.append("<a href=\"");
+                b.append(p.venueURL());
+                b.append("\">\r\n");
+            }
+            b.append(expand(s));
+            if (p.venueURL() != null)
+                b.append("</a>");
+            b.append("</span>");
 
-			String pp = p.pages();
-			if (pp != null)
-				b.append(",\r\npp. " + pp);
-			break;
-		case "article":
-			b.append("<span class=journalname>");
-			if (p.venueURL() != null) {
-				b.append("<a href=\"");
-				b.append(p.venueURL());
-				b.append("\">");
-			}
-			b.append(expand(p.venue()));
-			if (p.venueURL() != null)
-				b.append("</a>");
-			b.append("</span>");
-			String volume = p.volume();
-			String number = p.number();
-			String pages = p.pages();
-			if (volume != null) {
-				b.append(", ");
-				b.append(volume);
-				if (number != null) {
-					b.append("(");
-					b.append(number);
-					b.append(")");
-				}
-				if (pages != null) {
-					b.append(":");
-					b.append(pages);
-				}
-			}
-			break;
+            String pp = p.pages();
+            if (pp != null)
+                b.append(",\r\npp. " + pp);
+            break;
+        case "article":
+            b.append("<span class=journalname>");
+            if (p.venueURL() != null) {
+                b.append("<a href=\"");
+                b.append(p.venueURL());
+                    b.append("\">");
+            }
+            b.append(expand(p.venue()));
+            if (p.venueURL() != null)
+                b.append("</a>");
+            b.append("</span>");
+            String volume = p.volume();
+            String number = p.number();
+            String pages = p.pages();
+            if (volume != null) {
+                b.append(", ");
+                b.append(volume);
+                if (number != null) {
+                    b.append("(");
+                    b.append(number);
+                    b.append(")");
+                }
+                if (pages != null) {
+                    b.append(":");
+                    b.append(pages);
+                }
+            }
+            break;
 		case "unpublished":
 			b.append(expand(p.field("note", BibTeXEntry.KEY_NOTE)));
 			break;
